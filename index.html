@@ -32,15 +32,11 @@
             padding: 10px;
             text-align: center;
         }
-        .rename-input {
-            width: 90%;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
     <h1>Tischtennis-Team-Losung</h1>
-    <p>Füge Spielernamen hinzu, lasse Teams losen und benenne sie um!</p>
+    <p>Füge Spielernamen hinzu, lasse Teams losen und erstelle einen Spielplan!</p>
 
     <div>
         <input type="text" id="playerName" placeholder="Spielername">
@@ -59,7 +55,21 @@
                 <th>Team</th>
                 <th>Spieler 1</th>
                 <th>Spieler 2</th>
-                <th>Teamname</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button onclick="generateSchedule()">Spielplan erstellen</button>
+    <button onclick="openViewer()">Spielplan anzeigen</button>
+
+    <h3>Spielplan:</h3>
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th>Spiel</th>
+                <th>Team 1</th>
+                <th>Team 2</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -67,7 +77,7 @@
 
     <script>
         const players = [];
-        let teams = []; // Speichert die Teams
+        let teams = [];
 
         function addPlayer() {
             const playerName = document.getElementById('playerName').value.trim();
@@ -92,7 +102,7 @@
         function drawTeams() {
             const teamTable = document.getElementById('teamTable').querySelector('tbody');
             teamTable.innerHTML = '';
-            teams = []; // Teams zurücksetzen
+            teams = [];
 
             if (players.length < 2) {
                 alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
@@ -112,11 +122,6 @@
                     <td>${teamName}</td>
                     <td>${player1}</td>
                     <td>${player2}</td>
-                    <td>
-                        <input type="text" class="rename-input" 
-                               value="${teamName}" 
-                               onchange="updateTeamName(${teamCount - 1}, this.value)">
-                    </td>
                 </tr>`;
                 teamTable.innerHTML += row;
                 teamCount++;
@@ -127,9 +132,37 @@
             }
         }
 
-        function updateTeamName(teamIndex, newName) {
-            teams[teamIndex].teamName = newName;
-            alert(`Teamname aktualisiert: ${newName}`);
+        function generateSchedule() {
+            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+            scheduleTable.innerHTML = '';
+            const schedule = [];
+
+            if (teams.length < 2) {
+                alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
+                return;
+            }
+
+            let matchCount = 1;
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    const game = { match: matchCount, team1: teams[i].teamName, team2: teams[j].teamName };
+                    schedule.push(game);
+                    const row = `<tr>
+                        <td>Spiel ${matchCount}</td>
+                        <td>${teams[i].teamName}</td>
+                        <td>${teams[j].teamName}</td>
+                    </tr>`;
+                    scheduleTable.innerHTML += row;
+                    matchCount++;
+                }
+            }
+
+            // Spielplan in LocalStorage speichern
+            localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
+        }
+
+        function openViewer() {
+            window.open('viewer.html', '_blank');
         }
     </script>
 </body>
