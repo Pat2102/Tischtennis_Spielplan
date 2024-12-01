@@ -32,8 +32,8 @@
             padding: 10px;
             text-align: center;
         }
-        .rename-input {
-            width: 90%;
+        .result-input {
+            width: 100%;
             font-size: 14px;
         }
     </style>
@@ -75,6 +75,7 @@
                 <th>Spiel</th>
                 <th>Team 1</th>
                 <th>Team 2</th>
+                <th>Ergebnis</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -83,6 +84,7 @@
     <script>
         const players = [];
         let teams = [];
+        let schedule = [];
 
         function addPlayer() {
             const playerName = document.getElementById('playerName').value.trim();
@@ -149,7 +151,7 @@
         function generateSchedule() {
             const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
             scheduleTable.innerHTML = '';
-            const schedule = [];
+            schedule = [];
 
             if (teams.length < 2) {
                 alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
@@ -159,12 +161,17 @@
             let matchCount = 1;
             for (let i = 0; i < teams.length; i++) {
                 for (let j = i + 1; j < teams.length; j++) {
-                    const game = { match: matchCount, team1: teams[i].teamName, team2: teams[j].teamName };
+                    const game = { match: matchCount, team1: teams[i].teamName, team2: teams[j].teamName, result: '' };
                     schedule.push(game);
                     const row = `<tr>
                         <td>Spiel ${matchCount}</td>
                         <td>${teams[i].teamName}</td>
                         <td>${teams[j].teamName}</td>
+                        <td>
+                            <input type="text" class="result-input" 
+                                   placeholder="Ergebnis" 
+                                   onchange="updateResult(${matchCount - 1}, this.value)">
+                        </td>
                     </tr>`;
                     scheduleTable.innerHTML += row;
                     matchCount++;
@@ -172,6 +179,12 @@
             }
 
             // Spielplan in LocalStorage speichern
+            localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
+        }
+
+        function updateResult(matchIndex, result) {
+            schedule[matchIndex].result = result;
+            // Aktualisierte Ergebnisse im LocalStorage speichern
             localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
         }
 
