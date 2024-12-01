@@ -48,6 +48,8 @@
                 <th>Platz</th>
                 <th>Team</th>
                 <th>Punkte</th>
+                <th>Erzielte Punkte</th>
+                <th>Bekommene Punkte</th>
                 <th>Torverhältnis</th>
             </tr>
         </thead>
@@ -79,12 +81,20 @@
                 // Punkte und Torverhältnis berechnen
                 if (game.result) {
                     const [score1, score2] = game.result.split('-').map(Number); // Ergebnis im Format "X-Y"
-                    if (!standings[game.team1]) standings[game.team1] = { points: 0, goalDiff: 0 };
-                    if (!standings[game.team2]) standings[game.team2] = { points: 0, goalDiff: 0 };
+                    if (!standings[game.team1]) standings[game.team1] = { points: 0, scored: 0, conceded: 0, goalDiff: 0 };
+                    if (!standings[game.team2]) standings[game.team2] = { points: 0, scored: 0, conceded: 0, goalDiff: 0 };
 
-                    standings[game.team1].goalDiff += score1 - score2; // Torverhältnis für Team 1
-                    standings[game.team2].goalDiff += score2 - score1; // Torverhältnis für Team 2
+                    // Erzielte und erhaltene Punkte aktualisieren
+                    standings[game.team1].scored += score1;
+                    standings[game.team1].conceded += score2;
+                    standings[game.team2].scored += score2;
+                    standings[game.team2].conceded += score1;
 
+                    // Torverhältnis aktualisieren
+                    standings[game.team1].goalDiff += score1 - score2;
+                    standings[game.team2].goalDiff += score2 - score1;
+
+                    // Punkte vergeben
                     if (score1 > score2) {
                         standings[game.team1].points += 1; // Team 1 gewinnt
                     } else if (score1 < score2) {
@@ -113,13 +123,15 @@
                     <td>${index + 1}</td>
                     <td>${entry.team}</td>
                     <td>${entry.points}</td>
+                    <td>${entry.scored}</td>
+                    <td>${entry.conceded}</td>
                     <td>${entry.goalDiff}</td>
                 </tr>`;
                 standingsTable.innerHTML += row;
             });
         } else {
             scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
-            standingsTable.innerHTML = `<tr><td colspan="4">Keine Ergebnisse verfügbar</td></tr>`;
+            standingsTable.innerHTML = `<tr><td colspan="6">Keine Ergebnisse verfügbar</td></tr>`;
         }
     </script>
 </body>
