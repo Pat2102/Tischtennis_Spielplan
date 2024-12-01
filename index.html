@@ -78,7 +78,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
@@ -111,63 +111,93 @@
         }
 
         function drawTeams() {
-    const teamTable = document.getElementById('teamTable').querySelector('tbody');
-    teamTable.innerHTML = '';
-    teams = [];
+            const teamTable = document.getElementById('teamTable').querySelector('tbody');
+            teamTable.innerHTML = '';
+            teams = [];
 
-    if (players.length < 2) {
-        alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
-        return;
-    }
+            if (players.length < 2) {
+                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
+                return;
+            }
 
-    const shuffledPlayers = [...players];
-    shuffle(shuffledPlayers);
+            const shuffledPlayers = [...players];
+            shuffle(shuffledPlayers);
 
-    let teamCount = 1;
-    while (shuffledPlayers.length >= 2) {
-        const player1 = shuffledPlayers.pop();
-        const player2 = shuffledPlayers.pop();
-        const teamName = `Team ${teamCount}`;
-        const team = { player1, player2, teamName };
-        teams.push(team);
+            let teamCount = 1;
+            while (shuffledPlayers.length >= 2) {
+                const player1 = shuffledPlayers.pop();
+                const player2 = shuffledPlayers.pop();
+                const teamName = `Team ${teamCount}`;
+                const team = { player1, player2, teamName };
+                teams.push(team);
 
-        const row = `<tr>
-            <td>${teamName}</td>
-            <td>${player1}</td>
-            <td>${player2}</td>
-            <td>
-                <input type="text" class="rename-input" 
-                       value="${teamName}" 
-                       onchange="updateTeamName(${teamCount - 1}, this.value)">
-            </td>
-        </tr>`;
-        teamTable.innerHTML += row;
-        teamCount++;
-    }
+                const row = `<tr>
+                    <td>${teamName}</td>
+                    <td>${player1}</td>
+                    <td>${player2}</td>
+                    <td>
+                        <input type="text" class="rename-input" 
+                               value="${teamName}" 
+                               onchange="updateTeamName(${teamCount - 1}, this.value)">
+                    </td>
+                </tr>`;
+                teamTable.innerHTML += row;
+                teamCount++;
+            }
 
-    if (shuffledPlayers.length === 1) {
-        alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
-    }
+            if (shuffledPlayers.length === 1) {
+                alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
+            }
 
-    saveTeamsToFirebase(); // Teams in Firebase speichern
-}
+            saveTeamsToFirebase();
+        }
 
-function saveTeamsToFirebase() {
-    set(ref(db, 'teams'), teams)
-        .then(() => {
-            console.log('Teams erfolgreich in Firebase gespeichert.');
-        })
-        .catch(error => {
-            console.error('Fehler beim Speichern der Teams:', error);
-        });
-}
+        function saveTeamsToFirebase() {
+            set(ref(db, 'teams'), teams)
+                .then(() => {
+                    console.log('Teams erfolgreich in Firebase gespeichert.');
+                })
+                .catch(error => {
+                    console.error('Fehler beim Speichern der Teams:', error);
+                });
+        }
 
         function updateTeamName(teamIndex, newName) {
-    teams[teamIndex].teamName = newName; // Teamname im Array aktualisieren
-    saveTeamsToFirebase(); // Teams in Firebase aktualisieren
-    generateSchedule(); // Spielplan neu generieren
-}
+            teams[teamIndex].teamName = newName;
+            saveTeamsToFirebase();
+            generateSchedule();
+        }
 
+        function loadTeamsFromFirebase() {
+            const teamRef = ref(db, 'teams');
+            onValue(teamRef, (snapshot) => {
+                const firebaseTeams = snapshot.val();
+                if (firebaseTeams) {
+                    teams = firebaseTeams;
+                    renderTeams();
+                } else {
+                    console.log('Keine Teams in Firebase gefunden.');
+                }
+            });
+        }
+
+        function renderTeams() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody');
+            teamTable.innerHTML = '';
+
+            teams.forEach((team, index) => {
+                const row = `<tr>
+                    <td>${team.teamName}</td>
+                    <td>${team.player1}</td>
+                    <td>${team.player2}</td>
+                    <td>
+                        <input type="text" class="rename-input" 
+                               value="${team.teamName}" 
+                               onchange="updateTeamName(${index}, this.value)">
+                    </td>
+                </tr>`;
+                teamTable.innerHTML += row;
+            });
         }
 
         function generateSchedule() {
@@ -212,13 +242,12 @@ function saveTeamsToFirebase() {
         }
 
         function saveResultsToFirebase() {
-            console.log('Speichere folgenden Spielplan in Firebase:', schedule);
             set(ref(db, 'spielplan'), schedule)
                 .then(() => {
-                    console.log('Ergebnisse erfolgreich gespeichert!');
+                    console.log('Spielplan erfolgreich in Firebase gespeichert.');
                 })
                 .catch(error => {
-                    console.error('Fehler beim Speichern:', error);
+                    console.error('Fehler beim Speichern des Spielplans:', error);
                 });
         }
 
@@ -228,6 +257,10 @@ function saveTeamsToFirebase() {
                 [array[i], array[j]] = [array[j], array[i]];
             }
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTeamsFromFirebase(); // Teams beim Laden der Seite laden
+        });
 
         // Funktionen global verfügbar machen
         window.addPlayer = addPlayer;
