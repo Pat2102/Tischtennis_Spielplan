@@ -152,7 +152,7 @@
             teams[teamIndex].teamName = newName;
         }
 
-        function generateSchedule() {
+    function generateSchedule() {
     const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
     scheduleTable.innerHTML = '';
     schedule = [];
@@ -179,7 +179,7 @@
                 match: matchCount++,
                 team1: teams[i].teamName,
                 team2: teams[j].teamName,
-                result: ''
+                result: '' // Ergebnis ist leer
             };
             schedule.push(game);
 
@@ -201,11 +201,13 @@
     set(scheduleRef, schedule)
         .then(() => {
             console.log('Neuer Spielplan erfolgreich in Firebase gespeichert.');
+            alert('Neuer Spielplan wurde erstellt und in Firebase gespeichert.');
         })
         .catch(error => {
             console.error('Fehler beim Speichern des neuen Spielplans:', error);
         });
 }
+
 
 
         function updateResult(matchIndex, result) {
