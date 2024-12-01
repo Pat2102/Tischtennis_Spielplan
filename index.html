@@ -172,7 +172,6 @@
             console.error('Fehler beim Löschen des alten Spielplans:', error);
         });
 
-    // Round-Robin-Logik für faire Paarungen
     const numTeams = teams.length;
     const hasBye = numTeams % 2 !== 0; // Prüfen, ob ein "Spielfrei"-Team benötigt wird
     const allTeams = [...teams];
@@ -182,12 +181,13 @@
     }
 
     const numRounds = allTeams.length - 1;
-    const half = allTeams.length / 2;
+    const matchesPerRound = Math.floor(allTeams.length / 2);
 
+    // Round-Robin-Logik ohne fixiertes Team
     for (let round = 0; round < numRounds; round++) {
         const matchups = [];
 
-        for (let i = 0; i < half; i++) {
+        for (let i = 0; i < matchesPerRound; i++) {
             const team1 = allTeams[i];
             const team2 = allTeams[allTeams.length - 1 - i];
 
@@ -196,7 +196,7 @@
             }
         }
 
-        // Teams rotieren (außer das erste Team)
+        // Teams rotieren
         const last = allTeams.pop();
         allTeams.splice(1, 0, last);
 
@@ -220,6 +220,7 @@
             console.error('Fehler beim Speichern des neuen Spielplans:', error);
         });
 }
+
 
 
 
