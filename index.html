@@ -32,6 +32,10 @@
             padding: 10px;
             text-align: center;
         }
+        .rename-input {
+            width: 90%;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -55,6 +59,7 @@
                 <th>Team</th>
                 <th>Spieler 1</th>
                 <th>Spieler 2</th>
+                <th>Teamname</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -122,6 +127,11 @@
                     <td>${teamName}</td>
                     <td>${player1}</td>
                     <td>${player2}</td>
+                    <td>
+                        <input type="text" class="rename-input" 
+                               value="${teamName}" 
+                               onchange="updateTeamName(${teamCount - 1}, this.value)">
+                    </td>
                 </tr>`;
                 teamTable.innerHTML += row;
                 teamCount++;
@@ -130,6 +140,10 @@
             if (shuffledPlayers.length === 1) {
                 alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
             }
+        }
+
+        function updateTeamName(teamIndex, newName) {
+            teams[teamIndex].teamName = newName;
         }
 
         function generateSchedule() {
