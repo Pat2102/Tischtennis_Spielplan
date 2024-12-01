@@ -148,8 +148,12 @@
             }
         }
 
-        function updateTeamName(teamIndex, newName) {
-            teams[teamIndex].teamName = newName;
+       function updateTeamName(teamIndex, newName) {
+    teams[teamIndex].teamName = newName; // Teamnamen im Array aktualisieren
+    console.log(`Team ${teamIndex + 1} umbenannt in: ${newName}`);
+    generateSchedule(); // Spielplan mit neuen Namen neu generieren
+}
+
         }
 
         function generateSchedule() {
