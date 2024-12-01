@@ -25,96 +25,11 @@
         table {
             margin: 20px auto;
             border-collapse: collapse;
-            width: 60%;
+            width: 80%;
         }
         th, td {
             border: 1px solid #ccc;
             padding: 10px;
             text-align: center;
         }
-    </style>
-</head>
-<body>
-    <h1>Tischtennis-Team-Losung</h1>
-    <p>Füge Spielernamen hinzu und lasse zufällige 2er-Teams losen!</p>
-
-    <div>
-        <input type="text" id="playerName" placeholder="Spielername">
-        <button onclick="addPlayer()">Hinzufügen</button>
-    </div>
-
-    <h3>Spielerliste:</h3>
-    <ul id="playerList"></ul>
-
-    <button onclick="drawTeams()">Teams losen</button>
-
-    <h3>Teams:</h3>
-    <table id="teamTable">
-        <thead>
-            <tr>
-                <th>Team</th>
-                <th>Spieler 1</th>
-                <th>Spieler 2</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <script>
-        const players = [];
-
-        function addPlayer() {
-            const playerName = document.getElementById('playerName').value.trim();
-            if (playerName && !players.includes(playerName)) {
-                players.push(playerName);
-                document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
-                document.getElementById('playerName').value = '';
-            } else if (players.includes(playerName)) {
-                alert('Spieler ist bereits hinzugefügt!');
-            } else {
-                alert('Bitte einen gültigen Namen eingeben.');
-            }
-        }
-
-        function shuffle(array) {
-            // Fisher-Yates Shuffle Algorithm
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function drawTeams() {
-            const teamTable = document.getElementById('teamTable').querySelector('tbody');
-            teamTable.innerHTML = '';
-
-            if (players.length < 2) {
-                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
-                return;
-            }
-
-            // Shuffle players array
-            const shuffledPlayers = [...players];
-            shuffle(shuffledPlayers);
-
-            let teamCount = 1;
-            while (shuffledPlayers.length >= 2) {
-                const player1 = shuffledPlayers.pop();
-                const player2 = shuffledPlayers.pop();
-                const row = `<tr>
-                    <td>Team ${teamCount}</td>
-                    <td>${player1}</td>
-                    <td>${player2}</td>
-                </tr>`;
-                teamTable.innerHTML += row;
-                teamCount++;
-            }
-
-            // Falls ein Spieler übrig bleibt
-            if (shuffledPlayers.length === 1) {
-                alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
-            }
-        }
-    </script>
-</body>
-</html>
+        .rename-
