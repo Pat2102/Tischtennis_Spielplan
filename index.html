@@ -152,92 +152,78 @@
             teams[teamIndex].teamName = newName;
         }
 
-        function generateSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-            schedule = [];
+    function generateSchedule() {
+    const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+    scheduleTable.innerHTML = '';
+    schedule = [];
 
-            if (teams.length < 2) {
-                alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
-                return;
-            }
+    if (teams.length < 2) {
+        alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
+        return;
+    }
 
-            // Entferne den alten Spielplan aus Firebase
-            const scheduleRef = ref(db, 'spielplan');
-            set(scheduleRef, null)
-                .then(() => {
-                    console.log('Alter Spielplan erfolgreich aus Firebase entfernt.');
-                })
-                .catch(error => {
-                    console.error('Fehler beim Löschen des alten Spielplans:', error);
-                });
+    // Entferne den alten Spielplan aus Firebase
+    const scheduleRef = ref(db, 'spielplan');
+    set(scheduleRef, null)
+        .then(() => {
+            console.log('Alter Spielplan erfolgreich aus Firebase entfernt.');
+        })
+        .catch(error => {
+            console.error('Fehler beim Löschen des alten Spielplans:', error);
+        });
 
-            const numTeams = teams.length;
-            const hasBye = numTeams % 2 !== 0; // Prüfen, ob ein "Spielfrei"-Team benötigt wird
-            const allTeams = [...teams];
+    let matchCount = 1;
+    for (let i = 0; i < teams.length; i++) {
+        for (let j = i + 1; j < teams.length; j++) {
+            const game = {
+                match: matchCount++,
+                team1: teams[i].teamName,
+                team2: teams[j].teamName,
+                result: '' // Ergebnis ist leer
+            };
+            schedule.push(game);
 
-            if (hasBye) {
-                allTeams.push({ teamName: "Spielfrei" }); // Dummy-Team hinzufügen
-            }
+            const row = `<tr>
+                <td>Spiel ${game.match}</td>
+                <td>${game.team1}</td>
+                <td>${game.team2}</td>
+                <td>
+                    <input type="text" class="result-input" 
+                           placeholder="Ergebnis" 
+                           onchange="updateResult(${game.match - 1}, this.value)">
+                </td>
+            </tr>`;
+            scheduleTable.innerHTML += row;
+        }
+    }
 
-            const numRounds = allTeams.length - 1;
-            const matchesPerRound = Math.floor(allTeams.length / 2);
+    // Speichere den neuen Spielplan in Firebase
+    set(scheduleRef, schedule)
+        .then(() => {
+            console.log('Neuer Spielplan erfolgreich in Firebase gespeichert.');
+            alert('Neuer Spielplan wurde erstellt und in Firebase gespeichert.');
+        })
+        .catch(error => {
+            console.error('Fehler beim Speichern des neuen Spielplans:', error);
+        });
+}
 
-            // Round-Robin-Logik ohne fixiertes Team
-            for (let round = 0; round < numRounds; round++) {
-                const matchups = [];
 
-                for (let i = 0; i < matchesPerRound; i++) {
-                    const team1 = allTeams[i];
-                    const team2 = allTeams[allTeams.length - 1 - i];
 
-                    if (team1.teamName !== "Spielfrei" && team2.teamName !== "Spielfrei") {
-                        matchups.push({ team1: team1.teamName, team2: team2.teamName });
-                    }
-                }
-
-                // Teams rotieren
-                const last = allTeams.pop();
-                allTeams.splice(1, 0, last);
-
-                // Spiele hinzufügen
-                let matchCount = schedule.length + 1;
-                matchups.forEach((game) => {
-                    schedule.push({ match: matchCount++, team1: game.team1, team2: game.team2, result: '' });
-                });
-            }
-
-            // Tabelle anzeigen
-            renderSchedule();
-
-            // Speichere den neuen Spielplan in Firebase
-            set(scheduleRef, schedule)
-                .then(() => {
-                    console.log('Neuer Spielplan erfolgreich in Firebase gespeichert.');
-                    alert('Neuer Spielplan wurde erstellt und in Firebase gespeichert.');
-                })
-                .catch(error => {
-                    console.error('Fehler beim Speichern des neuen Spielplans:', error);
-                });
+        function updateResult(matchIndex, result) {
+            schedule[matchIndex].result = result;
+            saveResultsToFirebase();
         }
 
-        function renderSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-
-            schedule.forEach((game) => {
-                const row = `<tr>
-                    <td>Spiel ${game.match}</td>
-                    <td>${game.team1}</td>
-                    <td>${game.team2}</td>
-                    <td>
-                        <input type="text" class="result-input" 
-                               placeholder="Ergebnis" 
-                               onchange="updateResult(${game.match - 1}, this.value)">
-                    </td>
-                </tr>`;
-                scheduleTable.innerHTML += row;
-            });
+        function saveResultsToFirebase() {
+            console.log('Speichere folgenden Spielplan in Firebase:', schedule);
+            set(ref(db, 'spielplan'), schedule)
+                .then(() => {
+                    console.log('Ergebnisse erfolgreich gespeichert!');
+                })
+                .catch(error => {
+                    console.error('Fehler beim Speichern:', error);
+                });
         }
 
         function shuffle(array) {
@@ -247,25 +233,12 @@
             }
         }
 
-        function updateResult(matchIndex, result) {
-            schedule[matchIndex].result = result;
-            saveResultsToFirebase();
-        }
-
-        function saveResultsToFirebase() {
-            const scheduleRef = ref(db, 'spielplan');
-            set(scheduleRef, schedule)
-                .then(() => {
-                    console.log('Ergebnisse erfolgreich gespeichert.');
-                })
-                .catch(error => {
-                    console.error('Fehler beim Speichern:', error);
-                });
-        }
-
+        // Funktionen global verfügbar machen
         window.addPlayer = addPlayer;
         window.drawTeams = drawTeams;
         window.generateSchedule = generateSchedule;
+        window.updateResult = updateResult;
+        window.saveResultsToFirebase = saveResultsToFirebase;
     </script>
 </body>
 </html>
