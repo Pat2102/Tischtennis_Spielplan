@@ -192,8 +192,12 @@
         }
 
         function updateResult(matchIndex, result) {
-            schedule[matchIndex].result = result; // Ergebnis aktualisieren
-            saveResultsToFirebase(); // Automatisch speichern
+    schedule[matchIndex].result = result; // Ergebnis aktualisieren
+    console.log(`Spiel ${matchIndex + 1} Ergebnis aktualisiert: ${result}`);
+    console.log('Aktueller Spielplan:', schedule);
+    saveResultsToFirebase(); // Automatisch speichern
+}
+
         }
 
         function saveResultsToFirebase() {
