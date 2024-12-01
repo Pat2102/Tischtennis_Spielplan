@@ -33,6 +33,7 @@
                 <th>Spiel</th>
                 <th>Team 1</th>
                 <th>Team 2</th>
+                <th>Ergebnis</th>
             </tr>
         </thead>
         <tbody>
@@ -51,11 +52,12 @@
                     <td>Spiel ${game.match}</td>
                     <td>${game.team1}</td>
                     <td>${game.team2}</td>
+                    <td>${game.result || 'Offen'}</td>
                 </tr>`;
                 scheduleTable.innerHTML += row;
             });
         } else {
-            scheduleTable.innerHTML = `<tr><td colspan="3">Kein Spielplan verfügbar</td></tr>`;
+            scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
         }
     </script>
 </body>
