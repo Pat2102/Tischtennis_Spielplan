@@ -45,8 +45,10 @@
     <table id="standingsTable">
         <thead>
             <tr>
+                <th>Platz</th>
                 <th>Team</th>
                 <th>Punkte</th>
+                <th>Torverhältnis</th>
             </tr>
         </thead>
         <tbody>
@@ -63,7 +65,7 @@
             const schedule = JSON.parse(storedSchedule);
             const standings = {};
 
-            // Spielplan anzeigen und Punkte berechnen
+            // Spielplan anzeigen und Punkte sowie Torverhältnis berechnen
             schedule.forEach(game => {
                 // Spielplan einfügen
                 const row = `<tr>
@@ -74,36 +76,50 @@
                 </tr>`;
                 scheduleTable.innerHTML += row;
 
-                // Punkte berechnen
+                // Punkte und Torverhältnis berechnen
                 if (game.result) {
-                    const [score1, score2] = game.result.split('-').map(Number); // Annahme: Ergebnis ist im Format "X-Y"
-                    if (!standings[game.team1]) standings[game.team1] = 0;
-                    if (!standings[game.team2]) standings[game.team2] = 0;
+                    const [score1, score2] = game.result.split('-').map(Number); // Ergebnis im Format "X-Y"
+                    if (!standings[game.team1]) standings[game.team1] = { points: 0, goalDiff: 0 };
+                    if (!standings[game.team2]) standings[game.team2] = { points: 0, goalDiff: 0 };
+
+                    standings[game.team1].goalDiff += score1 - score2; // Torverhältnis für Team 1
+                    standings[game.team2].goalDiff += score2 - score1; // Torverhältnis für Team 2
 
                     if (score1 > score2) {
-                        standings[game.team1] += 1; // Team 1 gewinnt
+                        standings[game.team1].points += 1; // Team 1 gewinnt
                     } else if (score1 < score2) {
-                        standings[game.team2] += 1; // Team 2 gewinnt
-                    } else if (score1 === score2) {
-                        standings[game.team1] += 0.5; // Unentschieden
-                        standings[game.team2] += 0.5;
+                        standings[game.team2].points += 1; // Team 2 gewinnt
+                    } else {
+                        standings[game.team1].points += 0.5; // Unentschieden
+                        standings[game.team2].points += 0.5;
                     }
                 }
             });
 
-            // Zwischenstand anzeigen
-            Object.entries(standings)
-                .sort(([, pointsA], [, pointsB]) => pointsB - pointsA) // Nach Punkten sortieren
-                .forEach(([team, points]) => {
-                    const row = `<tr>
-                        <td>${team}</td>
-                        <td>${points}</td>
-                    </tr>`;
-                    standingsTable.innerHTML += row;
+            // Zwischenstand berechnen und sortieren
+            const sortedStandings = Object.entries(standings)
+                .map(([team, data]) => ({ team, ...data }))
+                .sort((a, b) => {
+                    // Sortierung: Zuerst nach Punkten, dann nach Torverhältnis
+                    if (b.points === a.points) {
+                        return b.goalDiff - a.goalDiff;
+                    }
+                    return b.points - a.points;
                 });
+
+            // Zwischenstand anzeigen
+            sortedStandings.forEach((entry, index) => {
+                const row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${entry.team}</td>
+                    <td>${entry.points}</td>
+                    <td>${entry.goalDiff}</td>
+                </tr>`;
+                standingsTable.innerHTML += row;
+            });
         } else {
             scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
-            standingsTable.innerHTML = `<tr><td colspan="2">Keine Ergebnisse verfügbar</td></tr>`;
+            standingsTable.innerHTML = `<tr><td colspan="4">Keine Ergebnisse verfügbar</td></tr>`;
         }
     </script>
 </body>
