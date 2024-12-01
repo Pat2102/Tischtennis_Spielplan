@@ -41,13 +41,31 @@
         </tbody>
     </table>
 
+    <h3>Zwischenstand:</h3>
+    <table id="standingsTable">
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Punkte</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Der Zwischenstand wird hier eingefügt -->
+        </tbody>
+    </table>
+
     <script>
         const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+        const standingsTable = document.getElementById('standingsTable').querySelector('tbody');
         const storedSchedule = localStorage.getItem('tischtennisSpielplan');
 
         if (storedSchedule) {
             const schedule = JSON.parse(storedSchedule);
+            const standings = {};
+
+            // Spielplan anzeigen und Punkte berechnen
             schedule.forEach(game => {
+                // Spielplan einfügen
                 const row = `<tr>
                     <td>Spiel ${game.match}</td>
                     <td>${game.team1}</td>
@@ -55,9 +73,37 @@
                     <td>${game.result || 'Offen'}</td>
                 </tr>`;
                 scheduleTable.innerHTML += row;
+
+                // Punkte berechnen
+                if (game.result) {
+                    const [score1, score2] = game.result.split('-').map(Number); // Annahme: Ergebnis ist im Format "X-Y"
+                    if (!standings[game.team1]) standings[game.team1] = 0;
+                    if (!standings[game.team2]) standings[game.team2] = 0;
+
+                    if (score1 > score2) {
+                        standings[game.team1] += 1; // Team 1 gewinnt
+                    } else if (score1 < score2) {
+                        standings[game.team2] += 1; // Team 2 gewinnt
+                    } else if (score1 === score2) {
+                        standings[game.team1] += 0.5; // Unentschieden
+                        standings[game.team2] += 0.5;
+                    }
+                }
             });
+
+            // Zwischenstand anzeigen
+            Object.entries(standings)
+                .sort(([, pointsA], [, pointsB]) => pointsB - pointsA) // Nach Punkten sortieren
+                .forEach(([team, points]) => {
+                    const row = `<tr>
+                        <td>${team}</td>
+                        <td>${points}</td>
+                    </tr>`;
+                    standingsTable.innerHTML += row;
+                });
         } else {
             scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
+            standingsTable.innerHTML = `<tr><td colspan="2">Keine Ergebnisse verfügbar</td></tr>`;
         }
     </script>
 </body>
