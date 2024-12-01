@@ -61,7 +61,6 @@
         </thead>
         <tbody></tbody>
     </table>
-    <button onclick="saveTeamsToFirebase()">Alle Änderungen speichern</button>
 
     <h3>Spielplan:</h3>
     <button onclick="generateSchedule()">Spielplan erstellen</button>
@@ -139,7 +138,7 @@
                     <td>
                         <input type="text" class="rename-input" 
                                value="${teamName}" 
-                               onchange="updateTeamName(${teamCount - 1}, this.value)">
+                               id="teamName-${teamCount - 1}">
                     </td>
                     <td>
                         <button onclick="saveTeam(${teamCount - 1})">Speichern</button>
@@ -154,23 +153,20 @@
             }
         }
 
-        function saveTeamsToFirebase() {
-            set(ref(db, 'teams'), teams)
-                .then(() => {
-                    alert('Alle Änderungen an den Teams wurden gespeichert!');
-                })
-                .catch(error => {
-                    console.error('Fehler beim Speichern der Teams:', error);
-                });
-        }
-
         function saveTeam(teamIndex) {
-            teams[teamIndex].teamName = document.querySelectorAll('.rename-input')[teamIndex].value;
-            saveTeamsToFirebase();
-        }
-
-        function updateTeamName(teamIndex, newName) {
-            teams[teamIndex].teamName = newName;
+            const newName = document.getElementById(`teamName-${teamIndex}`).value.trim();
+            if (newName) {
+                teams[teamIndex].teamName = newName;
+                set(ref(db, 'teams'), teams)
+                    .then(() => {
+                        alert(`Team ${teamIndex + 1} erfolgreich aktualisiert.`);
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Speichern des Teams:', error);
+                    });
+            } else {
+                alert('Teamname darf nicht leer sein.');
+            }
         }
 
         function loadTeamsFromFirebase() {
@@ -198,7 +194,7 @@
                     <td>
                         <input type="text" class="rename-input" 
                                value="${team.teamName}" 
-                               onchange="updateTeamName(${index}, this.value)">
+                               id="teamName-${index}">
                     </td>
                     <td>
                         <button onclick="saveTeam(${index})">Speichern</button>
@@ -246,13 +242,9 @@
 
         function updateResult(matchIndex, result) {
             schedule[matchIndex].result = result;
-            saveResultsToFirebase();
-        }
-
-        function saveResultsToFirebase() {
             set(ref(db, 'spielplan'), schedule)
                 .then(() => {
-                    console.log('Spielplan erfolgreich in Firebase gespeichert.');
+                    console.log('Spielplan erfolgreich aktualisiert.');
                 })
                 .catch(error => {
                     console.error('Fehler beim Speichern des Spielplans:', error);
@@ -273,9 +265,6 @@
         window.addPlayer = addPlayer;
         window.drawTeams = drawTeams;
         window.generateSchedule = generateSchedule;
-        window.saveTeamsToFirebase = saveTeamsToFirebase;
-        window.updateResult = updateResult;
-        window.saveResultsToFirebase = saveResultsToFirebase;
     </script>
 </body>
 </html>
