@@ -32,4 +32,105 @@
             padding: 10px;
             text-align: center;
         }
-        .rename-
+        .rename-input {
+            width: 90%;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tischtennis-Team-Losung</h1>
+    <p>Füge Spielernamen hinzu, lasse Teams losen und benenne sie um!</p>
+
+    <div>
+        <input type="text" id="playerName" placeholder="Spielername">
+        <button onclick="addPlayer()">Hinzufügen</button>
+    </div>
+
+    <h3>Spielerliste:</h3>
+    <ul id="playerList"></ul>
+
+    <button onclick="drawTeams()">Teams losen</button>
+
+    <h3>Teams:</h3>
+    <table id="teamTable">
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Spieler 1</th>
+                <th>Spieler 2</th>
+                <th>Teamname</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const players = [];
+        let teams = []; // Speichert die Teams
+
+        function addPlayer() {
+            const playerName = document.getElementById('playerName').value.trim();
+            if (playerName && !players.includes(playerName)) {
+                players.push(playerName);
+                document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
+                document.getElementById('playerName').value = '';
+            } else if (players.includes(playerName)) {
+                alert('Spieler ist bereits hinzugefügt!');
+            } else {
+                alert('Bitte einen gültigen Namen eingeben.');
+            }
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function drawTeams() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody');
+            teamTable.innerHTML = '';
+            teams = []; // Teams zurücksetzen
+
+            if (players.length < 2) {
+                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
+                return;
+            }
+
+            const shuffledPlayers = [...players];
+            shuffle(shuffledPlayers);
+
+            let teamCount = 1;
+            while (shuffledPlayers.length >= 2) {
+                const player1 = shuffledPlayers.pop();
+                const player2 = shuffledPlayers.pop();
+                const teamName = `Team ${teamCount}`;
+                teams.push({ player1, player2, teamName });
+                const row = `<tr>
+                    <td>${teamName}</td>
+                    <td>${player1}</td>
+                    <td>${player2}</td>
+                    <td>
+                        <input type="text" class="rename-input" 
+                               value="${teamName}" 
+                               onchange="updateTeamName(${teamCount - 1}, this.value)">
+                    </td>
+                </tr>`;
+                teamTable.innerHTML += row;
+                teamCount++;
+            }
+
+            if (shuffledPlayers.length === 1) {
+                alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
+            }
+        }
+
+        function updateTeamName(teamIndex, newName) {
+            teams[teamIndex].teamName = newName;
+            alert(`Teamname aktualisiert: ${newName}`);
+        }
+    </script>
+</body>
+</html>
