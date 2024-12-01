@@ -56,14 +56,14 @@
                 <th>Spieler 1</th>
                 <th>Spieler 2</th>
                 <th>Teamname</th>
-                <th>Aktion</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
 
-    <h3>Spielplan:</h3>
     <button onclick="generateSchedule()">Spielplan erstellen</button>
+
+    <h3>Spielplan:</h3>
     <table id="scheduleTable">
         <thead>
             <tr>
@@ -78,7 +78,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
@@ -128,9 +128,7 @@
                 const player1 = shuffledPlayers.pop();
                 const player2 = shuffledPlayers.pop();
                 const teamName = `Team ${teamCount}`;
-                const team = { player1, player2, teamName };
-                teams.push(team);
-
+                teams.push({ player1, player2, teamName });
                 const row = `<tr>
                     <td>${teamName}</td>
                     <td>${player1}</td>
@@ -138,10 +136,7 @@
                     <td>
                         <input type="text" class="rename-input" 
                                value="${teamName}" 
-                               id="teamName-${teamCount - 1}">
-                    </td>
-                    <td>
-                        <button onclick="saveTeam(${teamCount - 1})">Speichern</button>
+                               onchange="updateTeamName(${teamCount - 1}, this.value)">
                     </td>
                 </tr>`;
                 teamTable.innerHTML += row;
@@ -153,55 +148,8 @@
             }
         }
 
-        function saveTeam(teamIndex) {
-            const newName = document.getElementById(`teamName-${teamIndex}`).value.trim();
-            if (newName) {
-                teams[teamIndex].teamName = newName;
-                set(ref(db, 'teams'), teams)
-                    .then(() => {
-                        alert(`Team ${teamIndex + 1} erfolgreich aktualisiert.`);
-                    })
-                    .catch(error => {
-                        console.error('Fehler beim Speichern des Teams:', error);
-                    });
-            } else {
-                alert('Teamname darf nicht leer sein.');
-            }
-        }
-
-        function loadTeamsFromFirebase() {
-            const teamRef = ref(db, 'teams');
-            onValue(teamRef, (snapshot) => {
-                const firebaseTeams = snapshot.val();
-                if (firebaseTeams) {
-                    teams = firebaseTeams;
-                    renderTeams();
-                } else {
-                    console.log('Keine Teams in Firebase gefunden.');
-                }
-            });
-        }
-
-        function renderTeams() {
-            const teamTable = document.getElementById('teamTable').querySelector('tbody');
-            teamTable.innerHTML = '';
-
-            teams.forEach((team, index) => {
-                const row = `<tr>
-                    <td>${team.teamName}</td>
-                    <td>${team.player1}</td>
-                    <td>${team.player2}</td>
-                    <td>
-                        <input type="text" class="rename-input" 
-                               value="${team.teamName}" 
-                               id="teamName-${index}">
-                    </td>
-                    <td>
-                        <button onclick="saveTeam(${index})">Speichern</button>
-                    </td>
-                </tr>`;
-                teamTable.innerHTML += row;
-            });
+        function updateTeamName(teamIndex, newName) {
+            teams[teamIndex].teamName = newName;
         }
 
         function generateSchedule() {
@@ -242,12 +190,17 @@
 
         function updateResult(matchIndex, result) {
             schedule[matchIndex].result = result;
+            saveResultsToFirebase();
+        }
+
+        function saveResultsToFirebase() {
+            console.log('Speichere folgenden Spielplan in Firebase:', schedule);
             set(ref(db, 'spielplan'), schedule)
                 .then(() => {
-                    console.log('Spielplan erfolgreich aktualisiert.');
+                    console.log('Ergebnisse erfolgreich gespeichert!');
                 })
                 .catch(error => {
-                    console.error('Fehler beim Speichern des Spielplans:', error);
+                    console.error('Fehler beim Speichern:', error);
                 });
         }
 
@@ -258,13 +211,12 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadTeamsFromFirebase();
-        });
-
+        // Funktionen global verfügbar machen
         window.addPlayer = addPlayer;
         window.drawTeams = drawTeams;
         window.generateSchedule = generateSchedule;
+        window.updateResult = updateResult;
+        window.saveResultsToFirebase = saveResultsToFirebase;
     </script>
 </body>
 </html>
