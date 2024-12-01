@@ -148,8 +148,64 @@
             teams[teamIndex].teamName = newName;
         }
 
-        // Die aktualisierte generateSchedule-Funktion ist hier eingebettet
-        ${generateSchedule.toString()}
+        function generateSchedule() {
+            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+            scheduleTable.innerHTML = '';
+            schedule = [];
+
+            if (teams.length < 2) {
+                alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
+                return;
+            }
+
+            const numTeams = teams.length;
+            const hasBye = numTeams % 2 !== 0; // Prüfen, ob ein Dummy-Team benötigt wird
+            const allTeams = [...teams];
+
+            if (hasBye) {
+                allTeams.push({ teamName: "Spielfrei" }); // Dummy-Team hinzufügen
+            }
+
+            const numRounds = allTeams.length - 1;
+            const half = allTeams.length / 2;
+
+            for (let round = 0; round < numRounds; round++) {
+                const matchups = [];
+
+                for (let i = 0; i < half; i++) {
+                    const team1 = allTeams[i];
+                    const team2 = allTeams[allTeams.length - 1 - i];
+
+                    if (team1.teamName !== "Spielfrei" && team2.teamName !== "Spielfrei") {
+                        matchups.push({ team1: team1.teamName, team2: team2.teamName });
+                    }
+                }
+
+                const last = allTeams.pop();
+                allTeams.splice(1, 0, last);
+
+                let matchCount = schedule.length + 1;
+                matchups.forEach(game => {
+                    game.match = matchCount++;
+                    game.result = ''; // Platzhalter für Ergebnisse
+
+                    const row = `<tr>
+                        <td>Spiel ${game.match}</td>
+                        <td>${game.team1}</td>
+                        <td>${game.team2}</td>
+                        <td>
+                            <input type="text" class="result-input" 
+                                   placeholder="Ergebnis" 
+                                   onchange="updateResult(${game.match - 1}, this.value)">
+                        </td>
+                    </tr>`;
+                    scheduleTable.innerHTML += row;
+                    schedule.push(game);
+                });
+            }
+
+            localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
+        }
 
         function updateResult(matchIndex, result) {
             schedule[matchIndex].result = result;
