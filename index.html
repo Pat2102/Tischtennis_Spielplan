@@ -1,227 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
+        authDomain: "tischtennis-9575d.firebaseapp.com",
+        databaseURL: "https://tischtennis-9575d-default-rtdb.firebaseio.com",
+        projectId: "tischtennis-9575d",
+        storageBucket: "tischtennis-9575d.appspot.com",
+        messagingSenderId: "164931288159",
+        appId: "1:164931288159:web:5863d07a4cf511ee462fea"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const players = [];
+    let teams = [];
+    let schedule = [];
+
+    function addPlayer() {
+        const playerName = document.getElementById('playerName').value.trim();
+        if (playerName && !players.includes(playerName)) {
+            players.push(playerName);
+            document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
+            document.getElementById('playerName').value = '';
+        } else if (players.includes(playerName)) {
+            alert('Spieler ist bereits hinzugefügt!');
+        } else {
+            alert('Bitte einen gültigen Namen eingeben.');
         }
-        input, button {
-            margin: 5px;
-            padding: 10px;
-            font-size: 16px;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            margin: 5px 0;
-        }
-        table {
-            margin: 20px auto;
-            border-collapse: collapse;
-            width: 80%;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-    <h1>Tischtennis-Team-Losung</h1>
-    <p>Füge Spielernamen hinzu, lasse Teams losen und erstelle einen Spielplan!</p>
+    }
 
-    <div>
-        <input type="text" id="playerName" placeholder="Spielername">
-        <button onclick="addPlayer()">Hinzufügen</button>
-    </div>
+    function drawTeams() {
+        const teamTable = document.getElementById('teamTable').querySelector('tbody');
+        teamTable.innerHTML = '';
+        teams = [];
 
-    <h3>Spielerliste:</h3>
-    <ul id="playerList"></ul>
-
-    <button onclick="drawTeams()">Teams losen</button>
-
-    <h3>Teams:</h3>
-    <table id="teamTable">
-        <thead>
-            <tr>
-                <th>Team</th>
-                <th>Spieler 1</th>
-                <th>Spieler 2</th>
-                <th>Teamname</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <button onclick="generateSchedule()">Spielplan erstellen</button>
-
-    <h3>Spielplan:</h3>
-    <table id="scheduleTable">
-        <thead>
-            <tr>
-                <th>Spiel</th>
-                <th>Team 1</th>
-                <th>Team 2</th>
-                <th>Ergebnis</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <script type="module">
-        // Firebase Import
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-
-        // Firebase-Konfiguration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
-            authDomain: "tischtennis-9575d.firebaseapp.com",
-            databaseURL: "https://tischtennis-9575d-default-rtdb.firebaseio.com",
-            projectId: "tischtennis-9575d",
-            storageBucket: "tischtennis-9575d.appspot.com",
-            messagingSenderId: "164931288159",
-            appId: "1:164931288159:web:5863d07a4cf511ee462fea"
-        };
-
-        // Firebase Initialisierung
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        const players = [];
-        let teams = [];
-        let schedule = [];
-
-        function addPlayer() {
-            const playerName = document.getElementById('playerName').value.trim();
-            if (playerName && !players.includes(playerName)) {
-                players.push(playerName);
-                document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
-                document.getElementById('playerName').value = '';
-            } else if (players.includes(playerName)) {
-                alert('Spieler ist bereits hinzugefügt!');
-            } else {
-                alert('Bitte einen gültigen Namen eingeben.');
-            }
+        if (players.length < 2) {
+            alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
+            return;
         }
 
-        function drawTeams() {
-            const teamTable = document.getElementById('teamTable').querySelector('tbody');
-            teamTable.innerHTML = '';
-            teams = [];
+        const shuffledPlayers = [...players];
+        shuffle(shuffledPlayers);
 
-            if (players.length < 2) {
-                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
-                return;
-            }
+        let teamCount = 1;
+        while (shuffledPlayers.length >= 2) {
+            const player1 = shuffledPlayers.pop();
+            const player2 = shuffledPlayers.pop();
+            const teamName = `Team ${teamCount}`;
+            teams.push({ player1, player2, teamName });
+            const row = `<tr>
+                <td>${teamName}</td>
+                <td>${player1}</td>
+                <td>${player2}</td>
+                <td>
+                    <input type="text" class="rename-input" 
+                           value="${teamName}" 
+                           onchange="updateTeamName(${teamCount - 1}, this.value)">
+                </td>
+            </tr>`;
+            teamTable.innerHTML += row;
+            teamCount++;
+        }
 
-            const shuffledPlayers = [...players];
-            shuffle(shuffledPlayers);
+        if (shuffledPlayers.length === 1) {
+            alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
+        }
+    }
 
-            let teamCount = 1;
-            while (shuffledPlayers.length >= 2) {
-                const player1 = shuffledPlayers.pop();
-                const player2 = shuffledPlayers.pop();
-                const teamName = `Team ${teamCount}`;
-                teams.push({ player1, player2, teamName });
+    function updateTeamName(teamIndex, newName) {
+        teams[teamIndex].teamName = newName;
+    }
+
+    function generateSchedule() {
+        const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+        scheduleTable.innerHTML = '';
+        schedule = [];
+
+        if (teams.length < 2) {
+            alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
+            return;
+        }
+
+        let matchCount = 1;
+        for (let i = 0; i < teams.length; i++) {
+            for (let j = i + 1; j < teams.length; j++) {
+                const game = {
+                    match: matchCount++,
+                    team1: teams[i].teamName,
+                    team2: teams[j].teamName,
+                    result: ''
+                };
+                schedule.push(game);
+
                 const row = `<tr>
-                    <td>${teamName}</td>
-                    <td>${player1}</td>
-                    <td>${player2}</td>
+                    <td>Spiel ${game.match}</td>
+                    <td>${game.team1}</td>
+                    <td>${game.team2}</td>
                     <td>
-                        <input type="text" class="rename-input" 
-                               value="${teamName}" 
-                               onchange="updateTeamName(${teamCount - 1}, this.value)">
+                        <input type="text" class="result-input" 
+                               placeholder="Ergebnis" 
+                               onchange="updateResult(${game.match - 1}, this.value)">
                     </td>
                 </tr>`;
-                teamTable.innerHTML += row;
-                teamCount++;
-            }
-
-            if (shuffledPlayers.length === 1) {
-                alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
+                scheduleTable.innerHTML += row;
             }
         }
+    }
 
-        function updateTeamName(teamIndex, newName) {
-            teams[teamIndex].teamName = newName;
+    function updateResult(matchIndex, result) {
+        schedule[matchIndex].result = result;
+        saveResultsToFirebase();
+    }
+
+    function saveResultsToFirebase() {
+        console.log('Speichere folgenden Spielplan in Firebase:', schedule);
+        set(ref(db, 'spielplan'), schedule)
+            .then(() => {
+                console.log('Ergebnisse erfolgreich gespeichert!');
+            })
+            .catch(error => {
+                console.error('Fehler beim Speichern:', error);
+            });
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
         }
+    }
 
-        function generateSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-            schedule = [];
-
-            if (teams.length < 2) {
-                alert('Es müssen mindestens zwei Teams vorhanden sein, um einen Spielplan zu erstellen!');
-                return;
-            }
-
-            let matchCount = 1;
-            for (let i = 0; i < teams.length; i++) {
-                for (let j = i + 1; j < teams.length; j++) {
-                    const game = {
-                        match: matchCount++,
-                        team1: teams[i].teamName,
-                        team2: teams[j].teamName,
-                        result: ''
-                    };
-                    schedule.push(game);
-
-                    const row = `<tr>
-                        <td>Spiel ${game.match}</td>
-                        <td>${game.team1}</td>
-                        <td>${game.team2}</td>
-                        <td>
-                            <input type="text" class="result-input" 
-                                   placeholder="Ergebnis" 
-                                   onchange="updateResult(${game.match - 1}, this.value)">
-                        </td>
-                    </tr>`;
-                    scheduleTable.innerHTML += row;
-                }
-            }
-        }
-
-        function updateResult(matchIndex, result) {
-    schedule[matchIndex].result = result; // Ergebnis aktualisieren
-    console.log(`Spiel ${matchIndex + 1} Ergebnis aktualisiert: ${result}`);
-    console.log('Aktueller Spielplan:', schedule);
-    saveResultsToFirebase(); // Automatisch speichern
-}
-
-        }
-
-        function saveResultsToFirebase() {
-            set(ref(db, 'spielplan'), schedule)
-                .then(() => {
-                    console.log('Ergebnisse erfolgreich gespeichert!');
-                })
-                .catch(error => {
-                    console.error('Fehler beim Speichern:', error);
-                });
-        }
-
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        // Funktionen global verfügbar machen
-        window.addPlayer = addPlayer;
-        window.drawTeams = drawTeams;
-        window.generateSchedule = generateSchedule;
-        window.saveResultsToFirebase = saveResultsToFirebase;
-    </script>
-</body>
-</html>
+    // Funktionen global verfügbar machen
+    window.addPlayer = addPlayer;
+    window.drawTeams = drawTeams;
+    window.generateSchedule = generateSchedule;
+    window.updateResult = updateResult;
+    window.saveResultsToFirebase = saveResultsToFirebase;
+</script>
