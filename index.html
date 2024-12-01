@@ -212,6 +212,12 @@
                 [array[i], array[j]] = [array[j], array[i]];
             }
         }
+
+        // Funktionen global verfügbar machen
+        window.addPlayer = addPlayer;
+        window.drawTeams = drawTeams;
+        window.generateSchedule = generateSchedule;
+        window.saveResultsToFirebase = saveResultsToFirebase;
     </script>
 </body>
 </html>
