@@ -152,7 +152,7 @@
             teams[teamIndex].teamName = newName;
         }
 
-    function generateSchedule() {
+   function generateSchedule() {
     const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
     scheduleTable.innerHTML = '';
     schedule = [];
@@ -172,30 +172,43 @@
             console.error('Fehler beim Löschen des alten Spielplans:', error);
         });
 
-    let matchCount = 1;
-    for (let i = 0; i < teams.length; i++) {
-        for (let j = i + 1; j < teams.length; j++) {
-            const game = {
-                match: matchCount++,
-                team1: teams[i].teamName,
-                team2: teams[j].teamName,
-                result: '' // Ergebnis ist leer
-            };
-            schedule.push(game);
+    // Round-Robin-Logik für faire Paarungen
+    const numTeams = teams.length;
+    const hasBye = numTeams % 2 !== 0; // Prüfen, ob ein "Spielfrei"-Team benötigt wird
+    const allTeams = [...teams];
 
-            const row = `<tr>
-                <td>Spiel ${game.match}</td>
-                <td>${game.team1}</td>
-                <td>${game.team2}</td>
-                <td>
-                    <input type="text" class="result-input" 
-                           placeholder="Ergebnis" 
-                           onchange="updateResult(${game.match - 1}, this.value)">
-                </td>
-            </tr>`;
-            scheduleTable.innerHTML += row;
-        }
+    if (hasBye) {
+        allTeams.push({ teamName: "Spielfrei" }); // Dummy-Team hinzufügen
     }
+
+    const numRounds = allTeams.length - 1;
+    const half = allTeams.length / 2;
+
+    for (let round = 0; round < numRounds; round++) {
+        const matchups = [];
+
+        for (let i = 0; i < half; i++) {
+            const team1 = allTeams[i];
+            const team2 = allTeams[allTeams.length - 1 - i];
+
+            if (team1.teamName !== "Spielfrei" && team2.teamName !== "Spielfrei") {
+                matchups.push({ team1: team1.teamName, team2: team2.teamName });
+            }
+        }
+
+        // Teams rotieren (außer das erste Team)
+        const last = allTeams.pop();
+        allTeams.splice(1, 0, last);
+
+        // Spiele hinzufügen
+        let matchCount = schedule.length + 1;
+        matchups.forEach((game) => {
+            schedule.push({ match: matchCount++, team1: game.team1, team2: game.team2, result: '' });
+        });
+    }
+
+    // Tabelle anzeigen
+    renderSchedule();
 
     // Speichere den neuen Spielplan in Firebase
     set(scheduleRef, schedule)
@@ -207,6 +220,7 @@
             console.error('Fehler beim Speichern des neuen Spielplans:', error);
         });
 }
+
 
 
 
