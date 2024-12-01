@@ -62,7 +62,6 @@
     </table>
 
     <button onclick="generateSchedule()">Spielplan erstellen</button>
-    <button onclick="saveResultsToFirebase()">Ergebnisse speichern</button>
 
     <h3>Spielplan:</h3>
     <table id="scheduleTable">
@@ -193,13 +192,14 @@
         }
 
         function updateResult(matchIndex, result) {
-            schedule[matchIndex].result = result;
+            schedule[matchIndex].result = result; // Ergebnis aktualisieren
+            saveResultsToFirebase(); // Automatisch speichern
         }
 
         function saveResultsToFirebase() {
             set(ref(db, 'spielplan'), schedule)
                 .then(() => {
-                    alert('Ergebnisse erfolgreich gespeichert!');
+                    console.log('Ergebnisse erfolgreich gespeichert!');
                 })
                 .catch(error => {
                     console.error('Fehler beim Speichern:', error);
