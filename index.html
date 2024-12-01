@@ -32,10 +32,6 @@
             padding: 10px;
             text-align: center;
         }
-        .rename-input, .result-input {
-            width: 90%;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
@@ -66,7 +62,7 @@
     </table>
 
     <button onclick="generateSchedule()">Spielplan erstellen</button>
-    <button onclick="openViewer()">Spielplan anzeigen</button>
+    <button onclick="saveResultsToFirebase()">Ergebnisse speichern</button>
 
     <h3>Spielplan:</h3>
     <table id="scheduleTable">
@@ -81,7 +77,26 @@
         <tbody></tbody>
     </table>
 
-    <script>
+    <script type="module">
+        // Firebase Import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+        // Firebase-Konfiguration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
+            authDomain: "tischtennis-9575d.firebaseapp.com",
+            databaseURL: "https://tischtennis-9575d-default-rtdb.firebaseio.com",
+            projectId: "tischtennis-9575d",
+            storageBucket: "tischtennis-9575d.appspot.com",
+            messagingSenderId: "164931288159",
+            appId: "1:164931288159:web:5863d07a4cf511ee462fea"
+        };
+
+        // Firebase Initialisierung
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
         const players = [];
         let teams = [];
         let schedule = [];
@@ -96,13 +111,6 @@
                 alert('Spieler ist bereits hinzugefügt!');
             } else {
                 alert('Bitte einen gültigen Namen eingeben.');
-            }
-        }
-
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
             }
         }
 
@@ -148,7 +156,6 @@
             teams[teamIndex].teamName = newName;
         }
 
-        // Deine funktionierende `generateSchedule`-Funktion
         function generateSchedule() {
             const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
             scheduleTable.innerHTML = '';
@@ -159,38 +166,16 @@
                 return;
             }
 
-            const numTeams = teams.length;
-            const hasBye = numTeams % 2 !== 0; // Prüfen, ob wir ein Dummy-Team brauchen
-            const allTeams = [...teams];
-
-            if (hasBye) {
-                allTeams.push({ teamName: "Spielfrei" }); // Dummy-Team hinzufügen
-            }
-
-            const numRounds = allTeams.length - 1;
-            const half = allTeams.length / 2;
-
-            for (let round = 0; round < numRounds; round++) {
-                const matchups = [];
-
-                for (let i = 0; i < half; i++) {
-                    const team1 = allTeams[i];
-                    const team2 = allTeams[allTeams.length - 1 - i];
-
-                    if (team1.teamName !== "Spielfrei" && team2.teamName !== "Spielfrei") {
-                        matchups.push({ team1: team1.teamName, team2: team2.teamName });
-                    }
-                }
-
-                // Teams rotieren (außer das erste Team)
-                const last = allTeams.pop();
-                allTeams.splice(1, 0, last);
-
-                // Spiele in den Spielplan einfügen
-                let matchCount = schedule.length + 1;
-                matchups.forEach(game => {
-                    game.match = matchCount++;
-                    game.result = ''; // Platzhalter für Ergebnisse
+            let matchCount = 1;
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    const game = {
+                        match: matchCount++,
+                        team1: teams[i].teamName,
+                        team2: teams[j].teamName,
+                        result: ''
+                    };
+                    schedule.push(game);
 
                     const row = `<tr>
                         <td>Spiel ${game.match}</td>
@@ -203,21 +188,29 @@
                         </td>
                     </tr>`;
                     scheduleTable.innerHTML += row;
-                    schedule.push(game);
-                });
+                }
             }
-
-            // Spielplan in LocalStorage speichern
-            localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
         }
 
         function updateResult(matchIndex, result) {
             schedule[matchIndex].result = result;
-            localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
         }
 
-        function openViewer() {
-            window.open('viewer.html', '_blank');
+        function saveResultsToFirebase() {
+            set(ref(db, 'spielplan'), schedule)
+                .then(() => {
+                    alert('Ergebnisse erfolgreich gespeichert!');
+                })
+                .catch(error => {
+                    console.error('Fehler beim Speichern:', error);
+                });
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
         }
     </script>
 </body>
