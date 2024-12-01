@@ -56,12 +56,12 @@
                 <th>Spieler 1</th>
                 <th>Spieler 2</th>
                 <th>Teamname</th>
+                <th>Aktion</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
-
-    <button onclick="generateSchedule()">Spielplan erstellen</button>
+    <button onclick="saveTeamsToFirebase()">Änderungen speichern</button>
 
     <h3>Spielplan:</h3>
     <table id="scheduleTable">
@@ -140,6 +140,9 @@
                                value="${teamName}" 
                                onchange="updateTeamName(${teamCount - 1}, this.value)">
                     </td>
+                    <td>
+                        <button onclick="saveTeam(${teamCount - 1})">Speichern</button>
+                    </td>
                 </tr>`;
                 teamTable.innerHTML += row;
                 teamCount++;
@@ -148,24 +151,25 @@
             if (shuffledPlayers.length === 1) {
                 alert(`Der Spieler ${shuffledPlayers[0]} hat leider kein Team gefunden.`);
             }
-
-            saveTeamsToFirebase();
         }
 
         function saveTeamsToFirebase() {
             set(ref(db, 'teams'), teams)
                 .then(() => {
-                    console.log('Teams erfolgreich in Firebase gespeichert.');
+                    alert('Alle Änderungen an den Teams wurden gespeichert!');
                 })
                 .catch(error => {
                     console.error('Fehler beim Speichern der Teams:', error);
                 });
         }
 
+        function saveTeam(teamIndex) {
+            teams[teamIndex].teamName = document.querySelectorAll('.rename-input')[teamIndex].value;
+            saveTeamsToFirebase();
+        }
+
         function updateTeamName(teamIndex, newName) {
             teams[teamIndex].teamName = newName;
-            saveTeamsToFirebase();
-            generateSchedule();
         }
 
         function loadTeamsFromFirebase() {
@@ -194,6 +198,9 @@
                         <input type="text" class="rename-input" 
                                value="${team.teamName}" 
                                onchange="updateTeamName(${index}, this.value)">
+                    </td>
+                    <td>
+                        <button onclick="saveTeam(${index})">Speichern</button>
                     </td>
                 </tr>`;
                 teamTable.innerHTML += row;
@@ -259,13 +266,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadTeamsFromFirebase(); // Teams beim Laden der Seite laden
+            loadTeamsFromFirebase();
         });
 
-        // Funktionen global verfügbar machen
         window.addPlayer = addPlayer;
         window.drawTeams = drawTeams;
         window.generateSchedule = generateSchedule;
+        window.saveTeamsToFirebase = saveTeamsToFirebase;
         window.updateResult = updateResult;
         window.saveResultsToFirebase = saveResultsToFirebase;
     </script>
