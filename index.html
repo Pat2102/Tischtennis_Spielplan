@@ -32,8 +32,8 @@
             padding: 10px;
             text-align: center;
         }
-        .result-input {
-            width: 100%;
+        .rename-input, .result-input {
+            width: 90%;
             font-size: 14px;
         }
     </style>
@@ -158,25 +158,57 @@
                 return;
             }
 
-            let matchCount = 1;
+            // Alle möglichen Spiele erzeugen (Round Robin)
+            const allGames = [];
             for (let i = 0; i < teams.length; i++) {
                 for (let j = i + 1; j < teams.length; j++) {
-                    const game = { match: matchCount, team1: teams[i].teamName, team2: teams[j].teamName, result: '' };
-                    schedule.push(game);
-                    const row = `<tr>
-                        <td>Spiel ${matchCount}</td>
-                        <td>${teams[i].teamName}</td>
-                        <td>${teams[j].teamName}</td>
-                        <td>
-                            <input type="text" class="result-input" 
-                                   placeholder="Ergebnis" 
-                                   onchange="updateResult(${matchCount - 1}, this.value)">
-                        </td>
-                    </tr>`;
-                    scheduleTable.innerHTML += row;
-                    matchCount++;
+                    allGames.push({ team1: teams[i].teamName, team2: teams[j].teamName });
                 }
             }
+
+            // Spiele so sortieren, dass kein Team zweimal hintereinander spielt
+            const finalSchedule = [];
+            while (allGames.length > 0) {
+                let foundGame = false;
+
+                for (let i = 0; i < allGames.length; i++) {
+                    const game = allGames[i];
+                    const lastGame = finalSchedule[finalSchedule.length - 1];
+
+                    if (!lastGame || (lastGame.team1 !== game.team1 && lastGame.team1 !== game.team2 && lastGame.team2 !== game.team1 && lastGame.team2 !== game.team2)) {
+                        finalSchedule.push(game);
+                        allGames.splice(i, 1);
+                        foundGame = true;
+                        break;
+                    }
+                }
+
+                // Falls kein geeignetes Spiel gefunden wird, breche ab (kann bei sehr kleinen Gruppen passieren)
+                if (!foundGame) {
+                    alert('Es konnte kein ausgewogener Spielplan erstellt werden.');
+                    return;
+                }
+            }
+
+            // Spielplan anzeigen und speichern
+            let matchCount = 1;
+            finalSchedule.forEach(game => {
+                game.match = matchCount++;
+                game.result = ''; // Platzhalter für Ergebnisse
+
+                const row = `<tr>
+                    <td>Spiel ${game.match}</td>
+                    <td>${game.team1}</td>
+                    <td>${game.team2}</td>
+                    <td>
+                        <input type="text" class="result-input" 
+                               placeholder="Ergebnis" 
+                               onchange="updateResult(${game.match - 1}, this.value)">
+                    </td>
+                </tr>`;
+                scheduleTable.innerHTML += row;
+                schedule.push(game);
+            });
 
             // Spielplan in LocalStorage speichern
             localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
@@ -184,7 +216,6 @@
 
         function updateResult(matchIndex, result) {
             schedule[matchIndex].result = result;
-            // Aktualisierte Ergebnisse im LocalStorage speichern
             localStorage.setItem('tischtennisSpielplan', JSON.stringify(schedule));
         }
 
