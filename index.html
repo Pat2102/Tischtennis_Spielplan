@@ -5,13 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team-Losung Tischtennis</title>
     <style>
-        /* Deine CSS-Regeln */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <h1>Tischtennis-Team-Losung</h1>
     <p>Füge Spielernamen hinzu, lasse Teams losen und erstelle einen Spielplan!</p>
-    <!-- Rest des Inhalts -->
+
+    <div>
+        <input type="text" id="playerName" placeholder="Spielername">
+        <button onclick="addPlayer()">Hinzufügen</button>
+    </div>
+
+    <h3>Spielerliste:</h3>
+    <ul id="playerList"></ul>
+
+    <button onclick="drawTeams()">Teams losen</button>
+
+    <h3>Teams:</h3>
+    <table id="teamTable">
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Spieler 1</th>
+                <th>Spieler 2</th>
+                <th>Teamname</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button onclick="generateSchedule()">Spielplan erstellen</button>
+
+    <h3>Spielplan:</h3>
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th>Spiel</th>
+                <th>Team 1</th>
+                <th>Team 2</th>
+                <th>Ergebnis</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
