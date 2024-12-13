@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis</title>
+    <title>Team-Losung Tischtennis v1.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -108,6 +108,9 @@
         playerList.appendChild(newListItem);
         document.getElementById('playerName').value = '';
     } else {
+        alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+    }
+} else {
         alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
     }
 } else {
