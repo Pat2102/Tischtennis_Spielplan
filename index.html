@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.2</title>
+    <title>Team-Losung Tischtennis v1.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -110,6 +110,40 @@
             }
         }
 
+        function drawTeams() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody');
+            teamTable.innerHTML = '';
+            teams = [];
+
+            if (players.length < 2) {
+                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
+                return;
+            }
+
+            const shuffledPlayers = [...players];
+            shuffle(shuffledPlayers);
+
+            let teamCount = 1;
+            while (shuffledPlayers.length >= 2) {
+                const player1 = shuffledPlayers.pop();
+                const player2 = shuffledPlayers.pop();
+                const teamName = `Team ${teamCount}`;
+                teams.push({ player1, player2, teamName });
+                const row = `<tr>
+                    <td>${teamName}</td>
+                    <td>${player1}</td>
+                    <td>${player2}</td>
+                    <td><input type="text" class="rename-input" value="${teamName}" onchange="updateTeamName(${teamCount - 1}, this.value)"></td>
+                </tr>`;
+                teamTable.innerHTML += row;
+                teamCount++;
+            }
+        }
+
+        function updateTeamName(teamIndex, newName) {
+            teams[teamIndex].teamName = newName;
+        }
+
         function loadDataFromFirebase() {
             get(child(ref(db), 'teams')).then(snapshot => {
                 if (snapshot.exists()) {
@@ -144,21 +178,17 @@
             });
         }
 
-        function renderSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-            schedule.forEach(game => {
-                scheduleTable.innerHTML += `<tr>
-                    <td>Spiel ${game.match}</td>
-                    <td>${game.team1}</td>
-                    <td>${game.team2}</td>
-                    <td>${game.result || 'Offen'}</td>
-                </tr>`;
-            });
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
         }
 
         window.addPlayer = addPlayer;
+        window.drawTeams = drawTeams;
         window.loadDataFromFirebase = loadDataFromFirebase;
+
     </script>
 </body>
 </html>
