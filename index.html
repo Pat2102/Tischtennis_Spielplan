@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.2</title>
+    <title>Team-Losung Tischtennis v1.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -103,89 +103,97 @@
             const playerName = document.getElementById('playerName').value.trim();
             if (playerName && !players.includes(playerName)) {
                 players.push(playerName);
-                renderPlayerList();
+                document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
                 document.getElementById('playerName').value = '';
             } else {
-                alert('Spieler ist bereits hinzugefügt oder ungültig!');
+                alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
             }
         }
 
-        function renderPlayerList() {
-            const playerList = document.getElementById('playerList');
-            playerList.innerHTML = players.map(player => `<li>${player}</li>`).join('');
-        }
-
         function drawTeams() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody');
+            teamTable.innerHTML = '';
+            teams = [];
+
             if (players.length < 2) {
-                alert('Mindestens zwei Spieler benötigt!');
+                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
                 return;
             }
 
             const shuffledPlayers = [...players];
             shuffle(shuffledPlayers);
 
-            teams = [];
-            const teamTable = document.getElementById('teamTable').querySelector('tbody');
-            teamTable.innerHTML = '';
-
-            for (let i = 0; i < shuffledPlayers.length; i += 2) {
-                const teamName = `Team ${Math.floor(i / 2) + 1}`;
-                const player1 = shuffledPlayers[i];
-                const player2 = shuffledPlayers[i + 1] || '---';
-                teams.push({ teamName, player1, player2 });
-
-                teamTable.innerHTML += `<tr>
+            let teamCount = 1;
+            while (shuffledPlayers.length >= 2) {
+                const player1 = shuffledPlayers.pop();
+                const player2 = shuffledPlayers.pop();
+                const teamName = `Team ${teamCount}`;
+                teams.push({ player1, player2, teamName });
+                const row = `<tr>
                     <td>${teamName}</td>
                     <td>${player1}</td>
                     <td>${player2}</td>
-                    <td><input type="text" class="rename-input" value="${teamName}" onchange="updateTeamName(${Math.floor(i / 2)}, this.value)"></td>
+                    <td><input type="text" class="rename-input" value="${teamName}" onchange="updateTeamName(${teamCount - 1}, this.value)"></td>
                 </tr>`;
+                teamTable.innerHTML += row;
+                teamCount++;
             }
         }
 
         function updateTeamName(teamIndex, newName) {
-            teams[teamIndex].teamName = newName.trim();
+            teams[teamIndex].teamName = newName;
         }
 
         function saveTeamNames() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody').rows;
+
+            for (let i = 0; i < teamTable.length; i++) {
+                const newName = teamTable[i].querySelector('.rename-input').value.trim();
+                teams[i].teamName = newName;
+            }
+
             set(ref(db, 'teams'), teams)
-                .then(() => alert('Teamnamen gespeichert!'))
-                .catch(error => console.error('Fehler:', error));
+                .then(() => alert('Teamnamen erfolgreich gespeichert.'))
+                .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
+        }
+
+        function generateSchedule() {
+            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+            scheduleTable.innerHTML = '';
+            schedule = [];
+
+            if (teams.length < 2) {
+                alert('Es müssen mindestens zwei Teams vorhanden sein!');
+                return;
+            }
+
+            set(ref(db, 'spielplan'), null);
+
+            const availableMatches = [];
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    availableMatches.push({ team1: teams[i].teamName, team2: teams[j].teamName });
+                }
+            }
+
+            let matchCount = 1;
+            availableMatches.forEach(match => {
+                schedule.push({ match: matchCount++, ...match, result: '' });
+            });
+
+            set(ref(db, 'spielplan'), schedule);
+            alert('Neuer Spielplan erfolgreich erstellt!');
         }
 
         function loadDataFromFirebase() {
-            get(child(ref(db), 'teams')).then(snapshot => {
-                if (snapshot.exists()) {
-                    teams = snapshot.val();
-                    renderTeams();
-                }
-            });
             get(child(ref(db), 'spielplan')).then(snapshot => {
                 if (snapshot.exists()) {
                     schedule = snapshot.val();
-                    renderSchedule();
+                    alert('Daten erfolgreich geladen!');
+                } else {
+                    alert('Keine Daten gefunden!');
                 }
-            });
-        }
-
-        function renderTeams() {
-            const teamTable = document.getElementById('teamTable').querySelector('tbody');
-            teamTable.innerHTML = teams.map((team, index) => `<tr>
-                <td>${team.teamName}</td>
-                <td>${team.player1}</td>
-                <td>${team.player2}</td>
-                <td><input type="text" class="rename-input" value="${team.teamName}" onchange="updateTeamName(${index}, this.value)"></td>
-            </tr>`).join('');
-        }
-
-        function renderSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = schedule.map(game => `<tr>
-                <td>Spiel ${game.match}</td>
-                <td>${game.team1}</td>
-                <td>${game.team2}</td>
-                <td>${game.result || 'Offen'}</td>
-            </tr>`).join('');
+            }).catch(error => console.error('Fehler beim Laden der Daten:', error));
         }
 
         function shuffle(array) {
@@ -198,6 +206,7 @@
         window.addPlayer = addPlayer;
         window.drawTeams = drawTeams;
         window.saveTeamNames = saveTeamNames;
+        window.generateSchedule = generateSchedule;
         window.loadDataFromFirebase = loadDataFromFirebase;
     </script>
 </body>
