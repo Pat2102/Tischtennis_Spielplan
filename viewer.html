@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan</title>
+    <title>Spielplan v1.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -47,10 +47,9 @@
             <tr>
                 <th>Platz</th>
                 <th>Team</th>
-                <th>Punkte</th>
-                <th>Erzielte Punkte</th>
-                <th>Bekommene Punkte</th>
-                <th>Torverhältnis</th>
+                <th>Punkte (X:Y)</th>
+                <th>Spiele (Erzielt:Bekommen)</th>
+                <th>+/-</th>
             </tr>
         </thead>
         <tbody>
@@ -59,11 +58,9 @@
     </table>
 
     <script type="module">
-        // Firebase Import
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
-        // Firebase-Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
             authDomain: "tischtennis-9575d.firebaseapp.com",
@@ -74,14 +71,12 @@
             appId: "1:164931288159:web:5863d07a4cf511ee462fea"
         };
 
-        // Firebase Initialisierung
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
         const standingsTable = document.getElementById('standingsTable').querySelector('tbody');
 
-        // Echtzeitdaten abrufen
         const scheduleRef = ref(db, 'spielplan');
         onValue(scheduleRef, (snapshot) => {
             const schedule = snapshot.val();
@@ -89,19 +84,17 @@
                 renderSchedule(schedule);
             } else {
                 scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
-                standingsTable.innerHTML = `<tr><td colspan="6">Keine Ergebnisse verfügbar</td></tr>`;
+                standingsTable.innerHTML = `<tr><td colspan="5">Keine Ergebnisse verfügbar</td></tr>`;
             }
         });
 
         function renderSchedule(schedule) {
-            scheduleTable.innerHTML = ''; // Spielplan-Tabelle leeren
-            standingsTable.innerHTML = ''; // Zwischenstand-Tabelle leeren
+            scheduleTable.innerHTML = '';
+            standingsTable.innerHTML = '';
 
             const standings = {};
 
-            // Spielplan und Zwischenstand berechnen
             schedule.forEach(game => {
-                // Spielplan anzeigen
                 const row = `<tr>
                     <td>Spiel ${game.match}</td>
                     <td>${game.team1}</td>
@@ -110,11 +103,10 @@
                 </tr>`;
                 scheduleTable.innerHTML += row;
 
-                // Punkte und Torverhältnis berechnen
                 if (game.result) {
                     const [score1, score2] = game.result.split('-').map(Number);
-                    if (!standings[game.team1]) standings[game.team1] = { points: 0, scored: 0, conceded: 0, goalDiff: 0 };
-                    if (!standings[game.team2]) standings[game.team2] = { points: 0, scored: 0, conceded: 0, goalDiff: 0 };
+                    if (!standings[game.team1]) standings[game.team1] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
+                    if (!standings[game.team2]) standings[game.team2] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
 
                     standings[game.team1].scored += score1;
                     standings[game.team1].conceded += score2;
@@ -125,33 +117,25 @@
                     standings[game.team2].goalDiff += score2 - score1;
 
                     if (score1 > score2) {
-                        standings[game.team1].points += 1;
+                        standings[game.team1].wins += 2;
+                        standings[game.team2].losses += 2;
                     } else if (score1 < score2) {
-                        standings[game.team2].points += 1;
-                    } else {
-                        standings[game.team1].points += 0.5;
-                        standings[game.team2].points += 0.5;
+                        standings[game.team1].losses += 2;
+                        standings[game.team2].wins += 2;
                     }
                 }
             });
 
-            // Zwischenstand anzeigen
             const sortedStandings = Object.entries(standings)
                 .map(([team, data]) => ({ team, ...data }))
-                .sort((a, b) => {
-                    if (b.points === a.points) {
-                        return b.goalDiff - a.goalDiff;
-                    }
-                    return b.points - a.points;
-                });
+                .sort((a, b) => b.wins - a.wins || b.goalDiff - a.goalDiff);
 
             sortedStandings.forEach((entry, index) => {
                 const row = `<tr>
                     <td>${index + 1}</td>
                     <td>${entry.team}</td>
-                    <td>${entry.points}</td>
-                    <td>${entry.scored}</td>
-                    <td>${entry.conceded}</td>
+                    <td>${entry.wins}:${entry.losses}</td>
+                    <td>${entry.scored}:${entry.conceded}</td>
                     <td>${entry.goalDiff}</td>
                 </tr>`;
                 standingsTable.innerHTML += row;
