@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.1</title>
+    <title>Team-Losung Tischtennis v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -153,45 +153,6 @@
                 .catch(error => console.error('Fehler:', error));
         }
 
-        function generateSchedule() {
-            if (teams.length < 2) {
-                alert('Mindestens zwei Teams erforderlich!');
-                return;
-            }
-
-            set(ref(db, 'spielplan'), null);
-
-            schedule = [];
-            let matchCount = 1;
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-
-            for (let i = 0; i < teams.length; i++) {
-                for (let j = i + 1; j < teams.length; j++) {
-                    const match = {
-                        match: matchCount++,
-                        team1: teams[i].teamName,
-                        team2: teams[j].teamName,
-                        result: ''
-                    };
-                    schedule.push(match);
-                    scheduleTable.innerHTML += `<tr>
-                        <td>Spiel ${match.match}</td>
-                        <td>${match.team1}</td>
-                        <td>${match.team2}</td>
-                        <td><input type="text" class="result-input" placeholder="Ergebnis" onchange="updateResult(${match.match - 1}, this.value)"></td>
-                    </tr>`;
-                }
-            }
-
-            set(ref(db, 'spielplan'), schedule);
-        }
-
-        function updateResult(matchIndex, result) {
-            schedule[matchIndex].result = result;
-            set(ref(db, 'spielplan'), schedule);
-        }
-
         function loadDataFromFirebase() {
             get(child(ref(db), 'teams')).then(snapshot => {
                 if (snapshot.exists()) {
@@ -220,4 +181,24 @@
         function renderSchedule() {
             const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
             scheduleTable.innerHTML = schedule.map(game => `<tr>
-                <td>Spiel ${game.match
+                <td>Spiel ${game.match}</td>
+                <td>${game.team1}</td>
+                <td>${game.team2}</td>
+                <td>${game.result || 'Offen'}</td>
+            </tr>`).join('');
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        window.addPlayer = addPlayer;
+        window.drawTeams = drawTeams;
+        window.saveTeamNames = saveTeamNames;
+        window.loadDataFromFirebase = loadDataFromFirebase;
+    </script>
+</body>
+</html>
