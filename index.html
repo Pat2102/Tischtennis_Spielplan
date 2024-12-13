@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.0</title>
+    <title>Team-Losung Tischtennis</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -144,10 +144,17 @@
         }
 
         function saveTeamNames() {
-            set(ref(db, 'teams'), teams)
-                .then(() => alert('Teamnamen erfolgreich gespeichert.'))
-                .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
-        }
+    const teamTable = document.getElementById('teamTable').querySelector('tbody').rows;
+
+    for (let i = 0; i < teamTable.length; i++) {
+        const newName = teamTable[i].querySelector('.rename-input').value.trim();
+        teams[i].teamName = newName;
+    }
+
+    set(ref(db, 'teams'), teams)
+        .then(() => alert('Teamnamen erfolgreich gespeichert.'))
+        .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
+}
 
         function generateSchedule() {
             const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
