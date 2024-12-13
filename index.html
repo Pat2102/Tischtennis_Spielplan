@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis</title>
+    <title>Team-Losung Tischtennis v1.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -99,10 +99,30 @@
         let schedule = [];
 
         function addPlayer() {
-            const playerName = document.getElementById('playerName').value.trim();
-            if (playerName && !players.includes(playerName)) {
-                players.push(playerName);
-                document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
+    const playerName = document.getElementById('playerName').value.trim();
+    if (playerName && !players.includes(playerName)) {
+        players.push(playerName);
+        const playerList = document.getElementById('playerList');
+        const newListItem = document.createElement('li');
+        newListItem.textContent = playerName;
+        playerList.appendChild(newListItem);
+        document.getElementById('playerName').value = '';
+    } else {
+        alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+    }
+} else {
+        alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+    }
+} else {
+        alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+    }
+} else {
+        alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+    }
+} else {
+        alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+    }
+}</li>`;
                 document.getElementById('playerName').value = '';
             } else {
                 alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
@@ -140,24 +160,70 @@
         }
 
         function updateTeamName(teamIndex, newName) {
-            teams[teamIndex].teamName = newName;
-        }
+    teams[teamIndex].teamName = newName;
+    document.querySelectorAll('.rename-input')[teamIndex].value = newName;
+}
 
         function saveTeamNames() {
-            set(ref(db, 'teams'), teams)
-                .then(() => alert('Teamnamen erfolgreich gespeichert.'))
-                .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
-        }
+    set(ref(db, 'teams'), teams)
+        .then(() => alert('Teamnamen erfolgreich gespeichert.'))
+        .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
+}
+
+    set(ref(db, 'teams'), teams)
+        .then(() => alert('Teamnamen erfolgreich gespeichert.'))
+        .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
+}
 
         function generateSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-            schedule = [];
+    const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+    scheduleTable.innerHTML = '';
+    schedule = [];
 
-            if (teams.length < 2) {
-                alert('Es müssen mindestens zwei Teams vorhanden sein!');
-                return;
-            }
+    if (teams.length < 2) {
+        alert('Es müssen mindestens zwei Teams vorhanden sein!');
+        return;
+    }
+
+    set(ref(db, 'spielplan'), null);
+
+    const availableMatches = [];
+    for (let i = 0; i < teams.length; i++) {
+        for (let j = i + 1; j < teams.length; j++) {
+            availableMatches.push({ team1: teams[i].teamName, team2: teams[j].teamName });
+        }
+    }
+
+    let lastPlayed = new Map(teams.map(team => [team.teamName, -1]));
+    let matchCount = 1;
+
+    while (availableMatches.length > 0) {
+        availableMatches.sort((a, b) => {
+            const aLast = Math.max(lastPlayed.get(a.team1), lastPlayed.get(a.team2));
+            const bLast = Math.max(lastPlayed.get(b.team1), lastPlayed.get(b.team2));
+            return aLast - bLast;
+        });
+
+        const nextMatch = availableMatches.shift();
+        lastPlayed.set(nextMatch.team1, matchCount);
+        lastPlayed.set(nextMatch.team2, matchCount);
+
+        schedule.push({
+            match: matchCount++,
+            ...nextMatch,
+            result: ''
+        });
+
+        scheduleTable.innerHTML += `<tr>
+            <td>Spiel ${matchCount - 1}</td>
+            <td>${nextMatch.team1}</td>
+            <td>${nextMatch.team2}</td>
+            <td><input type="text" class="result-input" placeholder="Ergebnis" onchange="updateResult(${matchCount - 2}, this.value)"></td>
+        </tr>`;
+    }
+
+    set(ref(db, 'spielplan'), schedule);
+}
 
             set(ref(db, 'spielplan'), null);
 
