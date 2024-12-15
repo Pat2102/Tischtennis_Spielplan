@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.2</title>
+    <title>Team-Losung Tischtennis v1.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -159,10 +159,19 @@
                 .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
         }
 
-        function updateScheduleWithNewNames() {
+       function updateScheduleWithNewNames() {
+    get(ref(db, 'teams')).then(snapshot => {
+        if (snapshot.exists()) {
+            const updatedTeams = snapshot.val();
+
+            // Spielplan aktualisieren
             schedule.forEach(game => {
-                const team1 = teams.find(team => team.player1 === game.team1 || team.player2 === game.team1);
-                const team2 = teams.find(team => team.player1 === game.team2 || team.player2 === game.team2);
+                const team1 = updatedTeams.find(team => 
+                    team.player1 === game.team1 || team.player2 === game.team1 || team.teamName === game.team1
+                );
+                const team2 = updatedTeams.find(team => 
+                    team.player1 === game.team2 || team.player2 === game.team2 || team.teamName === game.team2
+                );
 
                 if (team1 && team2) {
                     game.team1 = team1.teamName;
@@ -173,7 +182,12 @@
             set(ref(db, 'spielplan'), schedule)
                 .then(() => alert('Spielplan erfolgreich aktualisiert.'))
                 .catch(error => console.error('Fehler beim Aktualisieren des Spielplans:', error));
+        } else {
+            alert('Keine Teams in Firebase gefunden.');
         }
+    }).catch(error => console.error('Fehler beim Laden der Teams:', error));
+}
+
         
         function generateSchedule() {
     const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
