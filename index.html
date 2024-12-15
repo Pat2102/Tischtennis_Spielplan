@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.1</title>
+    <title>Team-Losung Tischtennis v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -143,42 +143,41 @@
             teams[teamIndex].teamName = newName;
         }
 
-       function saveTeamNames() {
-            const teamTable = document.getElementById('teamTable').querySelector('tbody').rows;
+      function saveTeamNames() {
+    const teamTable = document.getElementById('teamTable').querySelector('tbody').rows;
 
-            for (let i = 0; i < teamTable.length; i++) {
-                const newName = teamTable[i].querySelector('.rename-input').value.trim();
-                teams[i].teamName = newName;
-            }
+    for (let i = 0; i < teamTable.length; i++) {
+        const newName = teamTable[i].querySelector('.rename-input').value.trim();
+        teams[i].teamName = newName;
+    }
 
-            set(ref(db, 'teams'), teams)
-                .then(() => {
-                    alert('Teamnamen erfolgreich gespeichert.');
-                    updateScheduleWithNewNames();
-                })
-                .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
-        }
+    set(ref(db, 'teams'), teams)
+        .then(() => {
+            alert('Teamnamen erfolgreich gespeichert.');
+            updateScheduleWithNewNames(); // Aktualisiere Spielplan
+        })
+        .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
+}
 
-       function updateScheduleWithNewNames() {
+
+      function updateScheduleWithNewNames() {
     get(ref(db, 'teams')).then(snapshot => {
         if (snapshot.exists()) {
             const updatedTeams = snapshot.val();
 
             // Spielplan aktualisieren
-            schedule.forEach(game => {
-                const team1 = updatedTeams.find(team => 
-                    team.player1 === game.team1 || team.player2 === game.team1 || team.teamName === game.team1
-                );
-                const team2 = updatedTeams.find(team => 
-                    team.player1 === game.team2 || team.player2 === game.team2 || team.teamName === game.team2
-                );
+            schedule = schedule.map(game => {
+                const team1 = updatedTeams.find(team => team.teamName === game.team1);
+                const team2 = updatedTeams.find(team => team.teamName === game.team2);
 
-                if (team1 && team2) {
-                    game.team1 = team1.teamName;
-                    game.team2 = team2.teamName;
-                }
+                return {
+                    ...game,
+                    team1: team1 ? team1.teamName : game.team1,
+                    team2: team2 ? team2.teamName : game.team2,
+                };
             });
 
+            // Speichern in Firebase
             set(ref(db, 'spielplan'), schedule)
                 .then(() => alert('Spielplan erfolgreich aktualisiert.'))
                 .catch(error => console.error('Fehler beim Aktualisieren des Spielplans:', error));
@@ -187,6 +186,7 @@
         }
     }).catch(error => console.error('Fehler beim Laden der Teams:', error));
 }
+
 
         
         function generateSchedule() {
