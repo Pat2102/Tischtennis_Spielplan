@@ -1,1 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tischtennis-Team-Losung v2.1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+        .admin-only {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tischtennis-Team-Losung</h1>
+    <p>Füge Spielernamen hinzu, lasse Teams losen und wähle zwischen einem vollständigen Spielplan oder einer Gruppenphase!</p>
 
+    <!-- Benutzerbereich -->
+    <div>
+        <input type="text" id="playerName" placeholder="Spielername">
+        <button onclick="addPlayer()">Hinzufügen</button>
+    </div>
+
+    <h3>Spielerliste:</h3>
+    <ul id="playerList"></ul>
+
+    <button onclick="drawTeams()">Teams losen</button>
+
+    <h3>Teams:</h3>
+    <table id="teamTable">
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Spieler 1</th>
+                <th>Spieler 2</th>
+                <th>Teamname</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3>Modus wählen:</h3>
+    <div>
+        <label>
+            <input type="radio" name="mode" value="roundRobin" checked> Jeder gegen Jeden
+        </label>
+        <label>
+            <input type="radio" name="mode" value="groupPhase"> Gruppenphase
+        </label>
+    </div>
+    <button onclick="generate()">Spielplan/Gruppen erstellen</button>
+
+    <div id="outputContainer" class="hidden">
+        <h3 id="outputTitle"></h3>
+        <div id="outputContent"></div>
+    </div>
+
+    <!-- Adminbereich (geschützt) -->
+    <div id="adminSection" class="admin-only">
+        <h2>Admin Bereich</h2>
+        <h3>Spielplan:</h3>
+        <table id="scheduleTable">
+            <thead>
+                <tr>
+                    <th>Spiel</th>
+                    <th>Team 1</th>
+                    <th>Team 2</th>
+                    <th>Ergebnis</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>Zwischenstand:</h3>
+        <table id="standingsTable">
+            <thead>
+                <tr>
+                    <th>Platz</th>
+                    <th>Team</th>
+                    <th>Punkte</th>
+                    <th>Spiele</th>
+                    <th>+/-</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>Team-Mitglieder:</h3>
+        <table id="teamsTable">
+            <thead>
+                <tr>
+                    <th>Team</th>
+                    <th>Mitglied 1</th>
+                    <th>Mitglied 2</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Login Bereich für den Admin -->
+    <div id="loginSection">
+        <h2>Admin Login</h2>
+        <input type="password" id="adminPassword" placeholder="Passwort">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
+            authDomain: "tischtennis-9575d.firebaseapp.com",
+            databaseURL: "https://tischtennis-9575d-default-rtdb.firebaseio.com",
+            projectId: "tischtennis-9575d",
+            storageBucket: "tischtennis-9575d.appspot.com",
+            messagingSenderId: "164931288159",
+            appId: "1:164931288159:web:5863d07a4cf511ee462fea"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+        const standingsTable = document.getElementById('standingsTable').querySelector('tbody');
+        const teamsTable = document.getElementById('teamsTable').querySelector('tbody');
+
+        const scheduleRef = ref(db, 'spielplan');
+        const teamsRef = ref(db, 'teams');
+
+        // Spielplan und Zwischenstand rendern
+        onValue(scheduleRef, (snapshot) => {
+            const schedule = snapshot.val();
+            if (schedule) {
+                renderSchedule(schedule);
+            } else {
+                scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
+                standingsTable.innerHTML = `<tr><td colspan="5">Keine Ergebnisse verfügbar</td></tr>`;
+            }
+        });
+
+        // Team-Mitglieder rendern
+        onValue(teamsRef, (snapshot) => {
+            const teams = snapshot.val();
+            if (teams) {
+                renderTeams(teams);
+            } else {
+                teamsTable.innerHTML = `<tr><td colspan="3">Keine Teams verfügbar</td></tr>`;
+            }
+        });
+
+        function renderSchedule(schedule) {
+            scheduleTable.innerHTML = '';
+            standingsTable.innerHTML = '';
+
+            const standings = {};
+
+            schedule.forEach(game => {
+                const row = `<tr>
+                    <td>Spiel ${game.match}</td>
+                    <td>${game.team1}</td>
+                    <td>${game.team2}</td>
+                    <td>${game.result || 'Offen'}</td>
+                </tr>`;
+                scheduleTable.innerHTML += row;
+
+                if (game.result) {
+                    const [score1, score2] = game.result.split('-').map(Number);
+                    if (!standings[game.team1]) standings[game.team1] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
+                    if (!standings[game.team2]) standings[game.team2] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
+
+                    standings[game.team1].scored += score1;
+                    standings[game.team1].conceded += score2;
+                    standings[game.team2].scored += score2;
+                    standings[game.team2].conceded += score1;
+
+                    standings[game.team1].goalDiff += score1 - score2;
+                    standings[game.team2].goalDiff += score2 - score1;
+
+                    if (score1 > score2) {
+                        standings[game.team1].wins += 2;
+                        standings[game.team2].losses += 2;
+                    } else if (score1 < score2) {
+                        standings[game.team1].losses += 2;
+                        standings[game.team2].wins += 2;
+                    }
+                }
+            });
+
+            const sortedStandings = Object.entries(standings)
+                .map(([team, data]) => ({ team, ...data }))
+                .sort((a, b) => b.wins - a.wins || b.goalDiff - a.goalDiff);
+
+            sortedStandings.forEach((entry, index) => {
+                const row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${entry.team}</td>
+                    <td>${entry.wins}:${entry.losses}</td>
+                    <td>${entry.scored}:${entry.conceded}</td>
+                    <td>${entry.goalDiff}</td>
+                </tr>`;
+                standingsTable.innerHTML += row;
+            });
+        }
+
+        function renderTeams(teams) {
+            teamsTable.innerHTML = '';
+            teams.forEach(team => {
+                const row = `<tr>
+                    <td>${team.teamName}</td>
+                    <td>${team.player1}</td>
+                    <td>${team.player2}</td>
+                </tr>`;
+                teamsTable.innerHTML += row;
+            });
+        }
+
+        const players = [];
+        let teams = [];
+        let schedule = [];
+
+        function addPlayer() {
+            const playerName = document.getElementById('playerName').value.trim();
+            if (playerName && !players.includes(playerName)) {
+                players.push(playerName);
+                document.getElementById('playerList').innerHTML += `<li>${playerName}</li>`;
+                document.getElementById('playerName').value = '';
+            } else {
+                alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
+            }
+        }
+
+        function drawTeams() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody');
+            teamTable.innerHTML = '';
+            teams = [];
+
+            if (players.length < 2) {
+                alert('Es müssen mindestens zwei Spieler hinzugefügt werden!');
+                return;
+            }
+
+            const shuffledPlayers = [...players];
+            shuffle(shuffledPlayers);
+
+            let teamCount = 1;
+            while (shuffledPlayers.length >= 2) {
+                const player1 = shuffledPlayers.pop();
+                const player2 = shuffledPlayers.pop();
+                const teamName = `Team ${teamCount}`;
+                teams.push({ player1, player2, teamName });
+                const row = `<tr>
+                    <td>${teamName}</td>
+                    <td>${player1}</td>
+                    <td>${player2}</td>
+                    <td><input type="text" class="rename-input" value="${teamName}" onchange="updateTeamName(${teamCount - 1}, this.value)"></td>
+                </tr>`;
+                teamTable.innerHTML += row;
+                teamCount++;
+            }
+        }
+
+        function generate() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            if (teams.length === 0) {
+                alert('Bitte zuerst Teams losen!');
+                return;
+            }
+
+            if (mode === 'roundRobin') {
+                generateRoundRobin();
+            } else if (mode === 'groupPhase') {
+                generateGroupPhase();
+            }
+        }
+
+        function generateRoundRobin() {
+            schedule = [];
+            const outputContainer = document.getElementById('outputContainer');
+            const outputContent = document.getElementById('outputContent');
+            const outputTitle = document.getElementById('outputTitle');
+
+            outputContainer.classList.remove('hidden');
+            outputTitle.textContent = 'Spielplan: Jeder gegen Jeden';
+            outputContent.innerHTML = '';
+
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    schedule.push({
+                        match: `Spiel ${schedule.length + 1}`,
+                        team1: teams[i].teamName,
+                        team2: teams[j].teamName,
+                        result: ''
+                    });
+                }
+            }
+
+            renderSchedule(schedule);
+        }
+
+        function generateGroupPhase() {
+            const groupSize = 4;
+            const outputContainer = document.getElementById('outputContainer');
+            const outputContent = document.getElementById('outputContent');
+            const outputTitle = document.getElementById('outputTitle');
+
+            outputContainer.classList.remove('hidden');
+            outputTitle.textContent = 'Gruppenphase';
+            outputContent.innerHTML = '';
+
+            const shuffledTeams = [...teams];
+            shuffle(shuffledTeams);
+
+            const groups = [];
+            for (let i = 0; i < shuffledTeams.length; i += groupSize) {
+                const group = shuffledTeams.slice(i, i + groupSize);
+                groups.push(group);
+            }
+
+            groups.forEach((group, index) => {
+                outputContent.innerHTML += `<h4>Gruppe ${String.fromCharCode(65 + index)}</h4>`;
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Spieler 1</th>
+                            <th>Spieler 2</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${group.map(team => `
+                            <tr>
+                                <td>${team.teamName}</td>
+                                <td>${team.player1}</td>
+                                <td>${team.player2}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                outputContent.appendChild(table);
+            });
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function updateTeamName(index, newName) {
+            teams[index].teamName = newName;
+        }
+
+        // Admin Login
+        function login() {
+            const password = document.getElementById('adminPassword').value.trim();
+            const correctPassword = "admin123"; // Beispiel-Passwort, in der Produktion sicherer machen
+
+            if (password === correctPassword) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('admin-only');
+            } else {
+                alert('Falsches Passwort!');
+            }
+        }
+    </script>
+</body>
+</html>
