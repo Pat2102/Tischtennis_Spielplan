@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan v1.1</title>
+    <title>Spielplan v1.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -57,7 +57,7 @@
         </tbody>
     </table>
 
-     <h3>Team-Mitglieder:</h3>
+    <h3>Team-Mitglieder:</h3>
     <table id="teamsTable">
         <thead>
             <tr>
@@ -90,8 +90,12 @@
 
         const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
         const standingsTable = document.getElementById('standingsTable').querySelector('tbody');
+        const teamsTable = document.getElementById('teamsTable').querySelector('tbody');
 
         const scheduleRef = ref(db, 'spielplan');
+        const teamsRef = ref(db, 'teams');
+
+        // Spielplan und Zwischenstand rendern
         onValue(scheduleRef, (snapshot) => {
             const schedule = snapshot.val();
             if (schedule) {
@@ -99,6 +103,16 @@
             } else {
                 scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
                 standingsTable.innerHTML = `<tr><td colspan="5">Keine Ergebnisse verfügbar</td></tr>`;
+            }
+        });
+
+        // Team-Mitglieder rendern
+        onValue(teamsRef, (snapshot) => {
+            const teams = snapshot.val();
+            if (teams) {
+                renderTeams(teams);
+            } else {
+                teamsTable.innerHTML = `<tr><td colspan="3">Keine Teams verfügbar</td></tr>`;
             }
         });
 
@@ -153,6 +167,18 @@
                     <td>${entry.goalDiff}</td>
                 </tr>`;
                 standingsTable.innerHTML += row;
+            });
+        }
+
+        function renderTeams(teams) {
+            teamsTable.innerHTML = '';
+            teams.forEach(team => {
+                const row = `<tr>
+                    <td>${team.teamName}</td>
+                    <td>${team.player1}</td>
+                    <td>${team.player2}</td>
+                </tr>`;
+                teamsTable.innerHTML += row;
             });
         }
     </script>
