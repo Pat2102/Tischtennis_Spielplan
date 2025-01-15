@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis-Team-Losung v2.0</title>
+    <title>Tischtennis-Team-Losung v2.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -180,7 +180,7 @@
             outputContent.appendChild(table);
         }
 
-        function generateGroupPhase(groupSize = 2) {
+        function generateGroupPhase() {
             const outputContainer = document.getElementById('outputContainer');
             const outputContent = document.getElementById('outputContent');
             const outputTitle = document.getElementById('outputTitle');
@@ -192,20 +192,92 @@
             const shuffledTeams = [...teams];
             shuffle(shuffledTeams);
 
-            const groups = [];
+            const groupA = [];
+            const groupB = [];
+
+            // Aufteilen der Teams in zwei Gruppen
             while (shuffledTeams.length > 0) {
-                groups.push(shuffledTeams.splice(0, groupSize));
+                if (groupA.length <= groupB.length) {
+                    groupA.push(shuffledTeams.pop());
+                } else {
+                    groupB.push(shuffledTeams.pop());
+                }
             }
 
-            groups.forEach((group, index) => {
+            // Spiele innerhalb der Gruppen erstellen
+            const groupMatches = [];
+            function createGroupMatches(group, groupName) {
                 const groupHTML = `
-                    <h4>Gruppe ${index + 1}</h4>
+                    <h4>${groupName}</h4>
                     <ul>
                         ${group.map(team => `<li>${team.teamName}</li>`).join('')}
                     </ul>
                 `;
                 outputContent.innerHTML += groupHTML;
-            });
+
+                for (let i = 0; i < group.length; i++) {
+                    for (let j = i + 1; j < group.length; j++) {
+                        groupMatches.push({
+                            match: `${groupName} - Spiel ${groupMatches.length + 1}`,
+                            team1: group[i].teamName,
+                            team2: group[j].teamName
+                        });
+                    }
+                }
+            }
+
+            createGroupMatches(groupA, 'Gruppe A');
+            createGroupMatches(groupB, 'Gruppe B');
+
+            // Ausgeben der Spiele
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Spiel</th>
+                        <th>Team 1</th>
+                        <th>Team 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${groupMatches.map(m => `<tr>
+                        <td>${m.match}</td>
+                        <td>${m.team1}</td>
+                        <td>${m.team2}</td>
+                    </tr>`).join('')}
+                </tbody>
+            `;
+            outputContent.appendChild(table);
+
+            // Platzierungsspiele (falls notwendig)
+            const placementMatches = [];
+            if (groupA.length > 3) {
+                placementMatches.push({
+                    match: 'Platzierungsspiel 5/6',
+                    team1: groupA[4].teamName,
+                    team2: groupB[3].teamName
+                });
+            }
+            if (placementMatches.length > 0) {
+                const placementTable = document.createElement('table');
+                placementTable.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Platzierungsspiel</th>
+                            <th>Team 1</th>
+                            <th>Team 2</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${placementMatches.map(m => `<tr>
+                            <td>${m.match}</td>
+                            <td>${m.team1}</td>
+                            <td>${m.team2}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                `;
+                outputContent.appendChild(placementTable);
+            }
         }
 
         function shuffle(array) {
