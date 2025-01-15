@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adminbereich - Tischtennis Team-Lösung</title>
+    <title>Adminbereich - Tischtennis Team-Lösung 11</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -32,10 +32,13 @@
             padding: 10px;
             text-align: center;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <h1>Adminbereich - Tischtennis Team-Lösung</h1>
+    <h1>Tischtennis - Adminbereich</h1>
 
     <!-- Login-Bereich -->
     <div id="loginSection">
@@ -45,7 +48,7 @@
     </div>
 
     <!-- Admin-Funktionen nach Login -->
-    <div id="adminSection" style="display: none;">
+    <div id="adminSection" class="hidden">
         <h2>Adminbereich - Team-Erstellung</h2>
 
         <div>
@@ -88,12 +91,48 @@
         </div>
     </div>
 
+    <!-- Sichtbarer Bereich für alle Spieler -->
+    <div id="userSection">
+        <h2>Aktuelle Ergebnisse</h2>
+        <div id="gameResults">
+            <!-- Hier erscheinen die Ergebnisse -->
+        </div>
+    </div>
+
     <script type="module">
         const correctPassword = "admin123"; // Setze das Passwort hier
         const players = [];
         let teams = [];
         let schedule = [];
 
+        // Für Benutzer zugänglich ohne Login
+        function displayResults() {
+            const gameResults = document.getElementById('gameResults');
+            if (schedule.length === 0) {
+                gameResults.innerHTML = '<p>Keine Spiele wurden erstellt.</p>';
+                return;
+            }
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Spiel</th>
+                        <th>Team 1</th>
+                        <th>Team 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${schedule.map(s => `<tr>
+                        <td>${s.match}</td>
+                        <td>${s.team1}</td>
+                        <td>${s.team2}</td>
+                    </tr>`).join('')}
+                </tbody>
+            `;
+            gameResults.appendChild(table);
+        }
+
+        // Login-Funktion
         function checkPassword() {
             const enteredPassword = document.getElementById('adminPassword').value;
             if (enteredPassword === correctPassword) {
@@ -104,6 +143,7 @@
             }
         }
 
+        // Spieler hinzufügen
         function addPlayer() {
             const playerName = document.getElementById('playerName').value.trim();
             if (playerName && !players.includes(playerName)) {
@@ -115,6 +155,7 @@
             }
         }
 
+        // Teams losen
         function drawTeams() {
             const teamTable = document.getElementById('teamTable').querySelector('tbody');
             teamTable.innerHTML = '';
@@ -145,6 +186,7 @@
             }
         }
 
+        // Spielplan generieren
         function generate() {
             const mode = document.querySelector('input[name="mode"]:checked').value;
             if (teams.length === 0) {
@@ -159,6 +201,7 @@
             }
         }
 
+        // Jeder gegen Jeden
         function generateRoundRobin() {
             schedule = [];
             const outputContainer = document.getElementById('outputContainer');
@@ -197,8 +240,11 @@
                 </tbody>
             `;
             outputContent.appendChild(table);
+
+            displayResults(); // Anzeige der aktuellen Ergebnisse
         }
 
+        // Gruppenphase
         function generateGroupPhase() {
             const outputContainer = document.getElementById('outputContainer');
             const outputContent = document.getElementById('outputContent');
@@ -222,50 +268,35 @@
                 }
             }
 
-            const groupMatches = [];
-            function createGroupMatches(group, groupName) {
-                const groupHTML = `
-                    <h4>${groupName}</h4>
-                    <ul>
-                        ${group.map(team => `<li>${team.teamName}</li>`).join('')}
-                    </ul>
-                `;
-                outputContent.innerHTML += groupHTML;
-
-                for (let i = 0; i < group.length; i++) {
-                    for (let j = i + 1; j < group.length; j++) {
-                        groupMatches.push({
-                            match: `${groupName} - Spiel ${groupMatches.length + 1}`,
-                            team1: group[i].teamName,
-                            team2: group[j].teamName
-                        });
-                    }
-                }
-            }
-
             createGroupMatches(groupA, 'Gruppe A');
             createGroupMatches(groupB, 'Gruppe B');
 
-            const table = document.createElement('table');
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Spiel</th>
-                        <th>Team 1</th>
-                        <th>Team 2</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${groupMatches.map(m => `<tr>
-                        <td>${m.match}</td>
-                        <td>${m.team1}</td>
-                        <td>${m.team2}</td>
-                    </tr>`).join('')}
-                </tbody>
-            `;
-            outputContent.appendChild(table);
+            displayResults(); // Anzeige der aktuellen Ergebnisse
         }
 
+        // Spiele für Gruppen erstellen
+        function createGroupMatches(group, groupName) {
+            const groupHTML = `
+                <h4>${groupName}</h4>
+                <ul>
+                    ${group.map(team => `<li>${team.teamName}</li>`).join('')}
+                </ul>
+            `;
+            const outputContent = document.getElementById('outputContent');
+            outputContent.innerHTML += groupHTML;
+
+            for (let i = 0; i < group.length; i++) {
+                for (let j = i + 1; j < group.length; j++) {
+                    schedule.push({
+                        match: `${groupName} - Spiel ${schedule.length + 1}`,
+                        team1: group[i].teamName,
+                        team2: group[j].teamName
+                    });
+                }
+            }
+        }
+
+        // Hilfsfunktion zum Mischen der Spieler
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -273,6 +304,7 @@
             }
         }
 
+        // Teamname aktualisieren
         function updateTeamName(index, newName) {
             teams[index].teamName = newName;
         }
