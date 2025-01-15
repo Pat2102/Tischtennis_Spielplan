@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.3</title>
+    <title>Tischtennis-Team-Losung v2.0</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -32,11 +32,14 @@
             padding: 10px;
             text-align: center;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <h1>Tischtennis-Team-Losung</h1>
-    <p>Füge Spielernamen hinzu, lasse Teams losen, speichere Teamnamen und generiere Gruppen!</p>
+    <p>Füge Spielernamen hinzu, lasse Teams losen und wähle zwischen einem vollständigen Spielplan oder einer Gruppenphase!</p>
 
     <div>
         <input type="text" id="playerName" placeholder="Spielername">
@@ -45,11 +48,6 @@
 
     <h3>Spielerliste:</h3>
     <ul id="playerList"></ul>
-
-    <button onclick="generateGroups()">Gruppenphase erstellen</button>
-
-    <h3>Gruppenphase:</h3>
-    <div id="groupContainer"></div>
 
     <button onclick="drawTeams()">Teams losen</button>
 
@@ -66,20 +64,21 @@
         <tbody></tbody>
     </table>
 
-    <button onclick="generateSchedule()">Spielplan erstellen</button>
+    <h3>Modus wählen:</h3>
+    <div>
+        <label>
+            <input type="radio" name="mode" value="roundRobin" checked> Jeder gegen Jeden
+        </label>
+        <label>
+            <input type="radio" name="mode" value="groupPhase"> Gruppenphase
+        </label>
+    </div>
+    <button onclick="generate()">Spielplan/Gruppen erstellen</button>
 
-    <h3>Spielplan:</h3>
-    <table id="scheduleTable">
-        <thead>
-            <tr>
-                <th>Spiel</th>
-                <th>Team 1</th>
-                <th>Team 2</th>
-                <th>Ergebnis</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <div id="outputContainer" class="hidden">
+        <h3 id="outputTitle"></h3>
+        <div id="outputContent"></div>
+    </div>
 
     <script type="module">
         const players = [];
@@ -95,44 +94,6 @@
             } else {
                 alert(playerName ? 'Spieler ist bereits hinzugefügt!' : 'Bitte einen gültigen Namen eingeben.');
             }
-        }
-
-        function generateGroups(groupSize = 4) {
-            if (players.length < groupSize) {
-                alert('Zu wenige Spieler für Gruppenphase!');
-                return;
-            }
-
-            const shuffledPlayers = [...players];
-            shuffle(shuffledPlayers);
-
-            const groups = [];
-            let currentGroup = [];
-
-            while (shuffledPlayers.length > 0) {
-                currentGroup.push(shuffledPlayers.pop());
-                if (currentGroup.length === groupSize || shuffledPlayers.length === 0) {
-                    groups.push([...currentGroup]);
-                    currentGroup = [];
-                }
-            }
-
-            displayGroups(groups);
-        }
-
-        function displayGroups(groups) {
-            const groupContainer = document.getElementById('groupContainer');
-            groupContainer.innerHTML = '';
-
-            groups.forEach((group, index) => {
-                const groupHTML = `
-                    <h4>Gruppe ${index + 1}</h4>
-                    <ul>
-                        ${group.map(player => `<li>${player}</li>`).join('')}
-                    </ul>
-                `;
-                groupContainer.innerHTML += groupHTML;
-            });
         }
 
         function drawTeams() {
@@ -165,45 +126,86 @@
             }
         }
 
-        function generateSchedule() {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-            schedule = [];
-
-            if (teams.length < 2) {
-                alert('Es müssen mindestens zwei Teams vorhanden sein!');
+        function generate() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            if (teams.length === 0) {
+                alert('Bitte zuerst Teams losen!');
                 return;
             }
 
-            const availableMatches = [];
-            for (let i = 0; i < teams.length; i++) {
-                for (let j = i + 1; j < teams.length; j++) {
-                    availableMatches.push({ team1: teams[i].teamName, team2: teams[j].teamName });
-                }
-            }
-
-            let matchCount = 1;
-
-            while (availableMatches.length > 0) {
-                const nextMatch = availableMatches.shift();
-
-                schedule.push({
-                    match: matchCount++,
-                    ...nextMatch,
-                    result: ''
-                });
-
-                scheduleTable.innerHTML += `<tr>
-                    <td>Spiel ${matchCount - 1}</td>
-                    <td>${nextMatch.team1}</td>
-                    <td>${nextMatch.team2}</td>
-                    <td><input type="text" class="result-input" placeholder="Ergebnis" onchange="updateResult(${matchCount - 2}, this.value)"></td>
-                </tr>`;
+            if (mode === 'roundRobin') {
+                generateRoundRobin();
+            } else if (mode === 'groupPhase') {
+                generateGroupPhase();
             }
         }
 
-        function updateResult(matchIndex, result) {
-            schedule[matchIndex].result = result;
+        function generateRoundRobin() {
+            schedule = [];
+            const outputContainer = document.getElementById('outputContainer');
+            const outputContent = document.getElementById('outputContent');
+            const outputTitle = document.getElementById('outputTitle');
+
+            outputContainer.classList.remove('hidden');
+            outputTitle.textContent = 'Spielplan: Jeder gegen Jeden';
+            outputContent.innerHTML = '';
+
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    schedule.push({
+                        match: `Spiel ${schedule.length + 1}`,
+                        team1: teams[i].teamName,
+                        team2: teams[j].teamName
+                    });
+                }
+            }
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Spiel</th>
+                        <th>Team 1</th>
+                        <th>Team 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${schedule.map(s => `<tr>
+                        <td>${s.match}</td>
+                        <td>${s.team1}</td>
+                        <td>${s.team2}</td>
+                    </tr>`).join('')}
+                </tbody>
+            `;
+            outputContent.appendChild(table);
+        }
+
+        function generateGroupPhase(groupSize = 2) {
+            const outputContainer = document.getElementById('outputContainer');
+            const outputContent = document.getElementById('outputContent');
+            const outputTitle = document.getElementById('outputTitle');
+
+            outputContainer.classList.remove('hidden');
+            outputTitle.textContent = 'Gruppenphase';
+            outputContent.innerHTML = '';
+
+            const shuffledTeams = [...teams];
+            shuffle(shuffledTeams);
+
+            const groups = [];
+            while (shuffledTeams.length > 0) {
+                groups.push(shuffledTeams.splice(0, groupSize));
+            }
+
+            groups.forEach((group, index) => {
+                const groupHTML = `
+                    <h4>Gruppe ${index + 1}</h4>
+                    <ul>
+                        ${group.map(team => `<li>${team.teamName}</li>`).join('')}
+                    </ul>
+                `;
+                outputContent.innerHTML += groupHTML;
+            });
         }
 
         function shuffle(array) {
@@ -213,10 +215,13 @@
             }
         }
 
+        function updateTeamName(index, newName) {
+            teams[index].teamName = newName;
+        }
+
         window.addPlayer = addPlayer;
-        window.generateGroups = generateGroups;
         window.drawTeams = drawTeams;
-        window.generateSchedule = generateSchedule;
+        window.generate = generate;
     </script>
 </body>
 </html>
