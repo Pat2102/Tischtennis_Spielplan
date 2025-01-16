@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.1</title>
+    <title>Team-Losung Tischtennis v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,7 +71,9 @@
                 <th>Spiel</th>
                 <th>Team 1</th>
                 <th>Team 2</th>
-                <th>Ergebnis</th>
+                <th>Satz 1</th>
+                <th>Satz 2</th>
+                <th>Satz 3</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -189,7 +191,7 @@
 
 
         
-        function generateSchedule() {
+       function generateSchedule() {
     const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
     scheduleTable.innerHTML = '';
     schedule = [];
@@ -208,36 +210,29 @@
         }
     }
 
-    let lastPlayed = new Map(teams.map(team => [team.teamName, -1]));
     let matchCount = 1;
-
     while (availableMatches.length > 0) {
-        availableMatches.sort((a, b) => {
-            const aLast = Math.max(lastPlayed.get(a.team1), lastPlayed.get(a.team2));
-            const bLast = Math.max(lastPlayed.get(b.team1), lastPlayed.get(b.team2));
-            return aLast - bLast;
-        });
-
         const nextMatch = availableMatches.shift();
-        lastPlayed.set(nextMatch.team1, matchCount);
-        lastPlayed.set(nextMatch.team2, matchCount);
-
         schedule.push({
             match: matchCount++,
             ...nextMatch,
-            result: ''
+            results: ['', '', ''], // Platz für bis zu 3 Satz-Ergebnisse
+            finalResult: '' // Endergebnis
         });
 
         scheduleTable.innerHTML += `<tr>
             <td>Spiel ${matchCount - 1}</td>
             <td>${nextMatch.team1}</td>
             <td>${nextMatch.team2}</td>
-            <td><input type="text" class="result-input" placeholder="Ergebnis" onchange="updateResult(${matchCount - 2}, this.value)"></td>
+            <td><input type="text" class="result-input" placeholder="Satz 1" onchange="updateSetResult(${matchCount - 2}, 0, this.value)"></td>
+            <td><input type="text" class="result-input" placeholder="Satz 2" onchange="updateSetResult(${matchCount - 2}, 1, this.value)"></td>
+            <td><input type="text" class="result-input" placeholder="Satz 3" onchange="updateSetResult(${matchCount - 2}, 2, this.value)"></td>
+            <td><span id="finalResult${matchCount - 2}"></span></td>
         </tr>`;
     }
 
     set(ref(db, 'spielplan'), schedule);
-        }
+}
 
         function updateResult(matchIndex, result) {
             schedule[matchIndex].result = result;
