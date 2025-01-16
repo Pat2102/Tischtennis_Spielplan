@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -105,7 +105,8 @@
                             <td>${match.match}</td>
                             <td>${match.team1}</td>
                             <td>${match.team2}</td>
-                            <td>${match.result[0] ? formatPoints(match.result) : "Noch nicht gespielt"}</td>
+                            <td>${match.result[0] ? match.result.join(', ') : "Noch nicht gespielt"}</td>
+
                         `;
                         scheduleTable.appendChild(row);
                     });
