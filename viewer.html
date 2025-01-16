@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan v1.2</title>
+    <title>Spielplan v1.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -123,31 +123,40 @@
     const standings = {};
 
     schedule.forEach(game => {
-        // Punkte und Punktverhältnis aus den results berechnen
+        // Initialisiere Punkte
         let pointsTeam1 = 0;
         let pointsTeam2 = 0;
 
-        game.results.forEach(set => {
-            const [score1, score2] = set.split('-').map(Number);
+        // Falls 'results' vorhanden, berechne die Punkte
+        if (game.results && game.results.length > 0) {
+            game.results.forEach(set => {
+                const [score1, score2] = set.split('-').map(Number);
 
-            // Falls die Scores ungültig sind, auf 0 setzen
-            if (isNaN(score1)) score1 = 0;
-            if (isNaN(score2)) score2 = 0;
+                // Überprüfe auf ungültige Werte und setze auf 0
+                if (isNaN(score1)) score1 = 0;
+                if (isNaN(score2)) score2 = 0;
 
-            pointsTeam1 += score1;
-            pointsTeam2 += score2;
-        });
+                pointsTeam1 += score1;
+                pointsTeam2 += score2;
+            });
+        }
+
+        // Berechne finalResult, wenn es nicht vorhanden ist
+        let finalResult = game.finalResult;
+        if (!finalResult) {
+            finalResult = pointsTeam1 > pointsTeam2 ? `${game.team1} gewinnt` : `${game.team2} gewinnt`;
+        }
 
         // Eintrag in der Spielplan-Tabelle
         const row = `<tr>
             <td>Spiel ${game.match}</td>
             <td>${game.team1}</td>
             <td>${game.team2}</td>
-            <td>${game.finalResult} (${game.results.join(', ')})</td>
+            <td>${finalResult} (${game.results ? game.results.join(', ') : 'kein Ergebnis'})</td>
         </tr>`;
         scheduleTable.innerHTML += row;
 
-        // Initialisiere die Teams in der Standings-Tabelle
+        // Initialisiere die Teams in der Standings-Tabelle, falls noch nicht vorhanden
         if (!standings[game.team1]) standings[game.team1] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
         if (!standings[game.team2]) standings[game.team2] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
 
@@ -160,10 +169,10 @@
         standings[game.team1].goalDiff += pointsTeam1 - pointsTeam2;
         standings[game.team2].goalDiff += pointsTeam2 - pointsTeam1;
 
-        if (game.finalResult.includes(game.team1)) {
+        if (finalResult.includes(game.team1)) {
             standings[game.team1].wins += 2;
             standings[game.team2].losses += 2;
-        } else if (game.finalResult.includes(game.team2)) {
+        } else if (finalResult.includes(game.team2)) {
             standings[game.team1].losses += 2;
             standings[game.team2].wins += 2;
         }
@@ -186,6 +195,7 @@
         standingsTable.innerHTML += row;
     });
 }
+
 
 
 
