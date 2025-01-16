@@ -1,116 +1,160 @@
-// Firebase-Konfiguration und Initialisierung
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tischtennis Rangliste</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tischtennis Rangliste</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Platz</th>
+                <th>Team</th>
+                <th>Punkte</th>
+                <th>Spiele</th>
+                <th>Punkteverhältnis</th>
+                <th>Differenz</th>
+            </tr>
+        </thead>
+        <tbody id="rankingTable">
+            <!-- Die Rangliste wird hier dynamisch eingefügt -->
+        </tbody>
+    </table>
 
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DATABASE_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
+    <script type="module">
+        // Firebase-Konfiguration und Initialisierung
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-// Rangliste erstellen
-const rankingTable = document.getElementById("rankingTable");
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-// Rangliste basierend auf den Ergebnissen generieren
-get(ref(db, 'spielplan')).then(snapshot => {
-    if (snapshot.exists()) {
-        const spielplan = snapshot.val();
-        const teamStats = {};
+        // Rangliste erstellen
+        const rankingTable = document.getElementById("rankingTable");
 
-        spielplan.forEach(match => {
-            const [team1, team2] = [match.team1, match.team2];
-            const results = match.result;
+        // Rangliste basierend auf den Ergebnissen generieren
+        get(ref(db, 'spielplan')).then(snapshot => {
+            if (snapshot.exists()) {
+                const spielplan = snapshot.val();
+                const teamStats = {};
 
-            // Wenn das Spiel noch nicht gespielt wurde, überspringen
-            if (results[0] === "") {
-                return;
-            }
+                spielplan.forEach(match => {
+                    const [team1, team2] = [match.team1, match.team2];
+                    const results = match.result;
 
-            // Berechnung der erzielten und erhaltenen Punkte
-            const { team1Points, team2Points } = calculatePoints(...results);
+                    // Wenn das Spiel noch nicht gespielt wurde, überspringen
+                    if (results[0] === "") {
+                        return;
+                    }
 
-            // Punktestände initialisieren, wenn noch nicht vorhanden
-            if (!teamStats[team1]) {
-                teamStats[team1] = { wins: 0, losses: 0, games: 0, scored: 0, received: 0 };
-            }
-            if (!teamStats[team2]) {
-                teamStats[team2] = { wins: 0, losses: 0, games: 0, scored: 0, received: 0 };
-            }
+                    // Berechnung der erzielten und erhaltenen Punkte
+                    const { team1Points, team2Points } = calculatePoints(...results);
 
-            // Punkte aktualisieren
-            teamStats[team1].games += 1; // Team 1 hat ein Spiel gespielt
-            teamStats[team2].games += 1; // Team 2 hat ein Spiel gespielt
+                    // Punktestände initialisieren, wenn noch nicht vorhanden
+                    if (!teamStats[team1]) {
+                        teamStats[team1] = { wins: 0, losses: 0, games: 0, scored: 0, received: 0 };
+                    }
+                    if (!teamStats[team2]) {
+                        teamStats[team2] = { wins: 0, losses: 0, games: 0, scored: 0, received: 0 };
+                    }
 
-            if (team1Points > team2Points) {
-                teamStats[team1].wins += 1; // Team 1 gewinnt
-                teamStats[team2].losses += 1; // Team 2 verliert
+                    // Punkte aktualisieren
+                    teamStats[team1].games += 1; // Team 1 hat ein Spiel gespielt
+                    teamStats[team2].games += 1; // Team 2 hat ein Spiel gespielt
+
+                    if (team1Points > team2Points) {
+                        teamStats[team1].wins += 1; // Team 1 gewinnt
+                        teamStats[team2].losses += 1; // Team 2 verliert
+                    } else {
+                        teamStats[team2].wins += 1; // Team 2 gewinnt
+                        teamStats[team1].losses += 1; // Team 1 verliert
+                    }
+
+                    // Spielpunkte summieren
+                    teamStats[team1].scored += team1Points;
+                    teamStats[team2].scored += team2Points;
+                    teamStats[team1].received += team2Points;
+                    teamStats[team2].received += team1Points;
+                });
+
+                // Rangliste sortieren und anzeigen
+                const sortedTeams = Object.entries(teamStats)
+                    .map(([team, stats]) => ({
+                        team,
+                        points: `${stats.wins * 2}:${stats.losses * 2}`, // Punkte in der Form X:Y
+                        games: stats.games,
+                        scored: stats.scored,
+                        received: stats.received,
+                        diff: stats.scored - stats.received
+                    }))
+                    .sort((a, b) => {
+                        // Sortierung nach Punkten (Wins zuerst), danach Differenz
+                        const [pointsA1, pointsA2] = a.points.split(':').map(Number);
+                        const [pointsB1, pointsB2] = b.points.split(':').map(Number);
+                        return pointsB1 - pointsA1 || b.diff - a.diff;
+                    });
+
+                rankingTable.innerHTML = ''; // Rangliste leeren
+                sortedTeams.forEach((team, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${team.team}</td>
+                        <td>${team.points}</td>
+                        <td>${team.games}</td>
+                        <td>${team.scored}:${team.received}</td>
+                        <td>${team.diff}</td>
+                    `;
+                    rankingTable.appendChild(row);
+                });
             } else {
-                teamStats[team2].wins += 1; // Team 2 gewinnt
-                teamStats[team1].losses += 1; // Team 1 verliert
+                console.log('Keine Spielplan-Daten für Rangliste gefunden.');
             }
-
-            // Spielpunkte summieren
-            teamStats[team1].scored += team1Points;
-            teamStats[team2].scored += team2Points;
-            teamStats[team1].received += team2Points;
-            teamStats[team2].received += team1Points;
         });
 
-        // Rangliste sortieren und anzeigen
-        const sortedTeams = Object.entries(teamStats)
-            .map(([team, stats]) => ({
-                team,
-                points: `${stats.wins * 2}:${stats.losses * 2}`, // Punkte in der Form X:Y
-                games: stats.games,
-                scored: stats.scored,
-                received: stats.received,
-                diff: stats.scored - stats.received
-            }))
-            .sort((a, b) => {
-                // Sortierung nach Punkten (Wins zuerst), danach Differenz
-                const [pointsA1, pointsA2] = a.points.split(':').map(Number);
-                const [pointsB1, pointsB2] = b.points.split(':').map(Number);
-                return pointsB1 - pointsA1 || b.diff - a.diff;
+        // Funktion zur Berechnung der Punkte eines Spiels
+        function calculatePoints(result1, result2, result3) {
+            let team1Points = 0;
+            let team2Points = 0;
+
+            [result1, result2, result3].forEach(result => {
+                if (result) {
+                    const [score1, score2] = result.split('-').map(Number);
+
+                    team1Points += score1;
+                    team2Points += score2;
+                }
             });
 
-        rankingTable.innerHTML = ''; // Rangliste leeren
-        sortedTeams.forEach((team, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${team.team}</td>
-                <td>${team.points}</td>
-                <td>${team.games}</td>
-                <td>${team.scored}:${team.received}</td>
-                <td>${team.diff}</td>
-            `;
-            rankingTable.appendChild(row);
-        });
-    } else {
-        console.log('Keine Spielplan-Daten für Rangliste gefunden.');
-    }
-});
-
-// Funktion zur Berechnung der Punkte eines Spiels
-function calculatePoints(result1, result2, result3) {
-    let team1Points = 0;
-    let team2Points = 0;
-
-    [result1, result2, result3].forEach(result => {
-        if (result) {
-            const [score1, score2] = result.split('-').map(Number);
-
-            team1Points += score1;
-            team2Points += score2;
+            return { team1Points, team2Points };
         }
-    });
-
-    return { team1Points, team2Points };
-}
+    </script>
+</body>
+</html>
