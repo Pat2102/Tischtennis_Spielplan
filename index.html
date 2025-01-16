@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Tischtennis Turnier v1.1</title>
+    <title>Admin - Tischtennis Turnier v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,11 +24,15 @@
 </head>
 <body>
     <h1>Tischtennis Turnier - Admin Seite</h1>
+
     <div>
         <h3>Teilnehmer erfassen</h3>
         <input type="text" id="playerName" placeholder="Spielername">
         <button onclick="addPlayer()">Teilnehmer hinzufügen</button>
     </div>
+
+    <h3>Teilnehmer:</h3>
+    <ul id="playersList"></ul>
 
     <h3>Teams zufällig erstellen</h3>
     <button onclick="createTeams()">Zufällige Teams erstellen</button>
@@ -84,10 +88,21 @@
                 players.push(playerName);
                 alert(`${playerName} wurde hinzugefügt.`);
                 document.getElementById('playerName').value = ''; // Eingabefeld leeren
-                console.log(players); // Debugging: Ausgabe der Spielerliste im Browser-Console
+                updatePlayerList(); // Spielerliste aktualisieren
             } else {
                 alert("Dieser Spieler wurde bereits hinzugefügt.");
             }
+        }
+
+        function updatePlayerList() {
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = ''; // Liste leeren
+
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player;
+                playersList.appendChild(li);
+            });
         }
 
         function createTeams() {
@@ -106,7 +121,7 @@
                 teams.push(team);
             }
 
-            // Speichern der Teams in Firebase
+            // Teams in Firebase speichern
             teams.forEach((team, index) => {
                 set(ref(db, 'teams/team' + (index + 1)), team);
             });
@@ -137,7 +152,7 @@
                     }
                 }
 
-                // Speichern des Spielplans in Firebase
+                // Spielplan in Firebase speichern
                 set(scheduleRef, schedule);
                 alert('Spielplan wurde erstellt.');
             });
