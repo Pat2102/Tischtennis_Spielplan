@@ -3,184 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Rangliste</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
         table {
-            width: 100%;
+            margin: 20px auto;
             border-collapse: collapse;
-            margin-top: 20px;
+            width: 80%;
         }
         th, td {
             border: 1px solid #ccc;
-            padding: 8px;
+            padding: 10px;
             text-align: center;
         }
-        th {
-            background-color: #f4f4f4;
-        }
         h3 {
-            margin-top: 40px;
+            margin-top: 30px;
         }
     </style>
 </head>
 <body>
-    <h1>Tischtennis Rangliste</h1>
-    <!-- Rangliste -->
-    <table>
+    <h1>Tischtennis Turnier - Aktueller Stand</h1>
+
+    <h3>Teams:</h3>
+    <ul id="teamList"></ul>
+
+    <h3>Spielplan:</h3>
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th>Spiel</th>
+                <th>Team 1</th>
+                <th>Team 2</th>
+                <th>Ergebnis</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3>Aktuelle Rangliste:</h3>
+    <table id="rankingTable">
         <thead>
             <tr>
                 <th>Platz</th>
-                <th>Team</th>
+                <th>Teamname</th>
                 <th>Punkte</th>
                 <th>Spiele</th>
-                <th>Punkteverhältnis</th>
-                <th>Differenz</th>
+                <th>+/-</th>
             </tr>
         </thead>
-        <tbody id="rankingTable">
-            <!-- Die Rangliste wird hier dynamisch eingefügt -->
-        </tbody>
-    </table>
-
-    <!-- Teams -->
-    <h3>Teams:</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Teamname</th>
-                <th>Spieler 1</th>
-                <th>Spieler 2</th>
-            </tr>
-        </thead>
-        <tbody id="teamList">
-            <!-- Teams werden hier dynamisch eingefügt -->
-        </tbody>
+        <tbody></tbody>
     </table>
 
     <script type="module">
-        // Firebase-Konfiguration und Initialisierung
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
+            authDomain: "tischtennis-9575d.firebaseapp.com",
+            databaseURL: "https://tischtennis-9575d-default-rtdb.firebaseio.com",
+            projectId: "tischtennis-9575d",
+            storageBucket: "tischtennis-9575d.appspot.com",
+            messagingSenderId: "164931288159",
+            appId: "1:164931288159:web:5863d07a4cf511ee462fea"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        const rankingTable = document.getElementById("rankingTable");
-        const teamList = document.getElementById("teamList");
+        const teamList = document.getElementById('teamList');
+        const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+        const rankingTable = document.getElementById('rankingTable').querySelector('tbody');
 
-        // Rangliste generieren
-        get(ref(db, 'spielplan')).then(snapshot => {
-            if (snapshot.exists()) {
-                const spielplan = snapshot.val();
-                const teamStats = {};
+        // Funktion zum Laden der Teams und des Spielplans
+        function loadTeamsAndSchedule() {
+            // Teams aus Firebase laden
+            get(ref(db, 'teams')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const teams = snapshot.val();
+                    teams.forEach(team => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${team.teamName} - ${team.player1} und ${team.player2}`;
+                        teamList.appendChild(listItem);
+                    });
+                } else {
+                    console.log('Keine Teams gefunden.');
+                }
+            });
 
-                spielplan.forEach(match => {
-                    const [team1, team2] = [match.team1, match.team2];
-                    const results = match.result;
+            // Spielplan aus Firebase laden
+            get(ref(db, 'spielplan')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const spielplan = snapshot.val();
+                    spielplan.forEach(match => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${match.match}</td>
+                            <td>${match.team1}</td>
+                            <td>${match.team2}</td>
+                            <td>${match.result[0] ? formatPoints(match.result) : "Noch nicht gespielt"}</td>
+                        `;
+                        scheduleTable.appendChild(row);
+                    });
+                } else {
+                    console.log('Kein Spielplan gefunden.');
+                }
+            });
 
-                    // Wenn das Spiel noch nicht gespielt wurde, überspringen
-                    if (results[0] === "") return;
+            // Rangliste basierend auf den Ergebnissen generieren
+            get(ref(db, 'spielplan')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const spielplan = snapshot.val();
+                    const teamStats = {};
 
-                    // Berechnung der erzielten und erhaltenen Punkte
-                    const { team1Points, team2Points } = calculatePoints(...results);
+                    spielplan.forEach(match => {
+                        const [team1, team2] = [match.team1, match.team2];
+                        const [result1, result2, result3] = match.result;
 
-                    // Punktestände initialisieren, wenn noch nicht vorhanden
-                    if (!teamStats[team1]) {
-                        teamStats[team1] = { wins: 0, losses: 0, games: 0, scored: 0, received: 0 };
-                    }
-                    if (!teamStats[team2]) {
-                        teamStats[team2] = { wins: 0, losses: 0, games: 0, scored: 0, received: 0 };
-                    }
+                        // Berechnung der erzielten und erhaltenen Punkte
+                        const { team1Points, team2Points } = calculatePoints(result1, result2, result3);
 
-                    // Punkte aktualisieren
-                    teamStats[team1].games += 1;
-                    teamStats[team2].games += 1;
+                        // Punktestände initialisieren, wenn noch nicht vorhanden
+                        if (!teamStats[team1]) {
+                            teamStats[team1] = { points: 0, scored: 0, received: 0 };
+                        }
+                        if (!teamStats[team2]) {
+                            teamStats[team2] = { points: 0, scored: 0, received: 0 };
+                        }
 
-                    if (team1Points > team2Points) {
-                        teamStats[team1].wins += 1;
-                        teamStats[team2].losses += 1;
-                    } else {
-                        teamStats[team2].wins += 1;
-                        teamStats[team1].losses += 1;
-                    }
+                        // Aktualisieren der Punkte und erzielten/gegegnere Punktzahlen
+                        if (team1Points > team2Points) {
+                            teamStats[team1].points += 2; // 2 Punkte für einen Sieg
+                        } else if (team2Points > team1Points) {
+                            teamStats[team2].points += 2; // 2 Punkte für einen Sieg
+                        }
 
-                    teamStats[team1].scored += team1Points;
-                    teamStats[team2].scored += team2Points;
-                    teamStats[team1].received += team2Points;
-                    teamStats[team2].received += team1Points;
-                });
-
-                // Rangliste sortieren und anzeigen
-                const sortedTeams = Object.entries(teamStats)
-                    .map(([team, stats]) => ({
-                        team,
-                        points: `${stats.wins * 2}:${stats.losses * 2}`,
-                        games: stats.games,
-                        scored: stats.scored,
-                        received: stats.received,
-                        diff: stats.scored - stats.received
-                    }))
-                    .sort((a, b) => {
-                        const [pointsA1, pointsA2] = a.points.split(':').map(Number);
-                        const [pointsB1, pointsB2] = b.points.split(':').map(Number);
-                        return pointsB1 - pointsA1 || b.diff - a.diff;
+                        teamStats[team1].scored += team1Points;
+                        teamStats[team2].scored += team2Points;
+                        teamStats[team1].received += team2Points;
+                        teamStats[team2].received += team1Points;
                     });
 
-                rankingTable.innerHTML = '';
-                sortedTeams.forEach((team, index) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${index + 1}</td>
-                        <td>${team.team}</td>
-                        <td>${team.points}</td>
-                        <td>${team.games}</td>
-                        <td>${team.scored}:${team.received}</td>
-                        <td>${team.diff}</td>
-                    `;
-                    rankingTable.appendChild(row);
-                });
-            } else {
-                console.log('Keine Spielplan-Daten gefunden.');
-            }
-        });
+                    // Rangliste sortieren und anzeigen
+                    const sortedTeams = Object.entries(teamStats)
+                        .map(([team, stats]) => ({
+                            team,
+                            points: stats.points,
+                            scored: stats.scored,
+                            received: stats.received,
+                            diff: stats.scored - stats.received
+                        }))
+                        .sort((a, b) => b.points - a.points || b.diff - a.diff);
 
-        // Teams laden und anzeigen
-        get(ref(db, 'teams')).then(snapshot => {
-            if (snapshot.exists()) {
-                const teams = snapshot.val();
-                teamList.innerHTML = '';
-                teams.forEach(team => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${team.teamName}</td>
-                        <td>${team.player1}</td>
-                        <td>${team.player2}</td>
-                    `;
-                    teamList.appendChild(row);
-                });
-            } else {
-                console.log('Keine Team-Daten gefunden.');
-            }
-        });
+                    sortedTeams.forEach((team, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>${team.team}</td>
+                            <td>${team.points}:0</td>
+                            <td>${team.scored}:${team.received}</td>
+                            <td>${team.diff}</td>
+                        `;
+                        rankingTable.appendChild(row);
+                    });
+                } else {
+                    console.log('Keine Spielplan-Daten für Rangliste gefunden.');
+                }
+            });
+        }
 
-        // Funktion zur Berechnung der Punkte eines Spiels
+        // Funktion zur Berechnung der Punkte
         function calculatePoints(result1, result2, result3) {
             let team1Points = 0;
             let team2Points = 0;
 
+            // Für jeden Satz wird geprüft, welches Team gewonnen hat
             [result1, result2, result3].forEach(result => {
                 if (result) {
                     const [score1, score2] = result.split('-').map(Number);
+
                     team1Points += score1;
                     team2Points += score2;
                 }
@@ -188,6 +193,16 @@
 
             return { team1Points, team2Points };
         }
+
+        // Formatierung der Spiele-Ergebnisse für die "Ergebnis"-Spalte
+        function formatPoints(results) {
+            const team1Points = results.map(result => result.split('-')[0]).reduce((sum, current) => sum + Number(current), 0);
+            const team2Points = results.map(result => result.split('-')[1]).reduce((sum, current) => sum + Number(current), 0);
+            return `${team1Points}:${team2Points}`;
+        }
+
+        // Beim Laden der Seite die Daten aus Firebase laden
+        window.onload = loadTeamsAndSchedule;
     </script>
 </body>
 </html>
