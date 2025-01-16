@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,7 +38,7 @@
                 <th>Spiel</th>
                 <th>Team 1</th>
                 <th>Team 2</th>
-                <th>Spiele</th>
+                <th>Ergebnis</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -123,26 +123,26 @@
                         const [team1, team2] = [match.team1, match.team2];
                         const [result1, result2, result3] = match.result;
 
-                        // Überprüfen, ob das Spiel abgeschlossen ist (keine leeren Ergebnisse)
-                        if (result1 && result2 && result3) {
-                            const { team1Points, team2Points } = calculatePoints(result1, result2, result3);
+                        // Berechnung der erzielten und erhaltenen Punkte
+                        const { team1Points, team2Points } = calculatePoints(result1, result2, result3);
 
-                            // Punkte für jedes Team speichern
-                            if (!teamScores[team1]) {
-                                teamScores[team1] = { scored: 0, received: 0, diff: 0 };
-                            }
-                            if (!teamScores[team2]) {
-                                teamScores[team2] = { scored: 0, received: 0, diff: 0 };
-                            }
-
-                            teamScores[team1].scored += team1Points;
-                            teamScores[team1].received += team2Points;
-                            teamScores[team1].diff = teamScores[team1].scored - teamScores[team1].received;
-
-                            teamScores[team2].scored += team2Points;
-                            teamScores[team2].received += team1Points;
-                            teamScores[team2].diff = teamScores[team2].scored - teamScores[team2].received;
+                        // Punkte für jedes Team speichern
+                        if (!teamScores[team1]) {
+                            teamScores[team1] = { scored: 0, received: 0, diff: 0 };
                         }
+                        if (!teamScores[team2]) {
+                            teamScores[team2] = { scored: 0, received: 0, diff: 0 };
+                        }
+
+                        // Berechnen der Differenz und Punktestand aktualisieren
+                        if (team1Points > team2Points) {
+                            teamScores[team1].scored += 2;
+                        } else if (team2Points > team1Points) {
+                            teamScores[team2].scored += 2;
+                        }
+
+                        teamScores[team1].received += team2Points;
+                        teamScores[team2].received += team1Points;
                     });
 
                     // Rangliste sortieren und anzeigen
@@ -166,7 +166,31 @@
             });
         }
 
-        // Formatierung der Spiele-Ergebnisse für die "Spiele"-Spalte
+        // Funktion zur Berechnung der Punkte
+        function calculatePoints(result1, result2, result3) {
+            let team1Points = 0;
+            let team2Points = 0;
+
+            // Für jeden Satz wird geprüft, welches Team gewonnen hat
+            [result1, result2, result3].forEach(result => {
+                if (result) {
+                    const [score1, score2] = result.split('-').map(Number);
+
+                    if (score1 > score2) {
+                        team1Points++;
+                    } else if (score2 > score1) {
+                        team2Points++;
+                    }
+                }
+            });
+
+            return {
+                team1Points,
+                team2Points
+            };
+        }
+
+        // Formatierung der Spiele-Ergebnisse für die "Ergebnis"-Spalte
         function formatPoints(results) {
             const team1Points = results.map(result => result.split('-')[0]).reduce((sum, current) => sum + Number(current), 0);
             const team2Points = results.map(result => result.split('-')[1]).reduce((sum, current) => sum + Number(current), 0);
