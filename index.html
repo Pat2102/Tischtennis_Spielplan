@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Tischtennis Turnier v1.2</title>
+    <title>Admin - Tischtennis Turnier v1.1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -78,6 +78,7 @@
         const scheduleRef = ref(db, 'spielplan');
         const players = [];
 
+        // Funktion zum Hinzufügen eines Teilnehmers
         function addPlayer() {
             const playerName = document.getElementById('playerName').value;
             if (playerName.trim() === "") {
@@ -94,6 +95,7 @@
             }
         }
 
+        // Funktion, um die Liste der Spieler im HTML anzuzeigen
         function updatePlayerList() {
             const playersList = document.getElementById('playersList');
             playersList.innerHTML = ''; // Liste leeren
@@ -105,6 +107,7 @@
             });
         }
 
+        // Funktion zum Erstellen der Teams
         function createTeams() {
             if (players.length % 2 !== 0) {
                 alert('Die Anzahl der Teilnehmer muss gerade sein!');
@@ -129,6 +132,7 @@
             alert('Teams wurden zufällig erstellt.');
         }
 
+        // Funktion zum Erstellen des Spielplans
         function generateSchedule() {
             get(teamsRef).then(snapshot => {
                 const teams = snapshot.val();
@@ -158,6 +162,7 @@
             });
         }
 
+        // Spielplan aus Firebase laden und anzeigen
         onValue(scheduleRef, snapshot => {
             const schedule = snapshot.val();
             if (schedule) {
@@ -165,6 +170,7 @@
             }
         });
 
+        // Funktion zur Darstellung des Spielplans
         function renderSchedule(schedule) {
             const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
             scheduleTable.innerHTML = '';
