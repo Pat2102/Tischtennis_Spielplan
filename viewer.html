@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -127,10 +127,10 @@
 
                         // Initialisiere Team-Statistiken, wenn noch nicht vorhanden
                         if (!teamStats[team1]) {
-                            teamStats[team1] = { wins: 0, losses: 0, diff: 0, scored: 0, conceded: 0 };
+                            teamStats[team1] = { wins: 0, losses: 0, scored: 0, conceded: 0 };
                         }
                         if (!teamStats[team2]) {
-                            teamStats[team2] = { wins: 0, losses: 0, diff: 0, scored: 0, conceded: 0 };
+                            teamStats[team2] = { wins: 0, losses: 0, scored: 0, conceded: 0 };
                         }
 
                         // Berechnung der Ergebnisse für alle Sätze
@@ -165,7 +165,7 @@
                             team,
                             points: `${stats.wins}:${stats.losses}`,
                             games: `${stats.wins + stats.losses}`,
-                            diff: stats.diff,
+                            diff: stats.scored - stats.conceded, // Differenz berechnen
                             scored: stats.scored,
                             conceded: stats.conceded
                         }))
@@ -182,7 +182,7 @@
                             <td>${team.team}</td>
                             <td>${team.points}</td>
                             <td>${team.games}</td>
-                            <td>${team.diff}</td>
+                            <td>${team.diff}</td> <!-- Differenz hier -->
                             <td>${team.scored}:${team.conceded}</td>
                         `;
                         rankingTable.appendChild(row);
