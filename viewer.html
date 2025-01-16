@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan v1.1</title>
+    <title>Spielplan v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -116,7 +116,7 @@
             }
         });
 
-        function renderSchedule(schedule) {
+      function renderSchedule(schedule) {
     scheduleTable.innerHTML = '';
     standingsTable.innerHTML = '';
 
@@ -129,6 +129,11 @@
 
         game.results.forEach(set => {
             const [score1, score2] = set.split('-').map(Number);
+
+            // Falls die Scores ungültig sind, auf 0 setzen
+            if (isNaN(score1)) score1 = 0;
+            if (isNaN(score2)) score2 = 0;
+
             pointsTeam1 += score1;
             pointsTeam2 += score2;
         });
@@ -181,6 +186,7 @@
         standingsTable.innerHTML += row;
     });
 }
+
 
 
         function renderTeams(teams) {
