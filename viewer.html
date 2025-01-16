@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -123,30 +123,32 @@
                         const [team1, team2] = [match.team1, match.team2];
                         const [result1, result2, result3] = match.result;
 
-                        // Berechnung der erzielten und erhaltenen Punkte
-                        const { team1Points, team2Points, team1Scored, team2Scored } = calculatePoints(result1, result2, result3);
+                        // Überprüfen, ob das Spiel abgeschlossen ist (keine leeren Ergebnisse)
+                        if (result1 && result2 && result3) {
+                            const { team1Points, team2Points, team1Scored, team2Scored } = calculatePoints(result1, result2, result3);
 
-                        // Punkte für jedes Team speichern
-                        if (!teamScores[team1]) {
-                            teamScores[team1] = { scored: 0, received: 0, diff: 0 };
-                        }
-                        if (!teamScores[team2]) {
-                            teamScores[team2] = { scored: 0, received: 0, diff: 0 };
-                        }
+                            // Punkte für jedes Team speichern
+                            if (!teamScores[team1]) {
+                                teamScores[team1] = { scored: 0, received: 0, diff: 0 };
+                            }
+                            if (!teamScores[team2]) {
+                                teamScores[team2] = { scored: 0, received: 0, diff: 0 };
+                            }
 
-                        teamScores[team1].scored += team1Scored;
-                        teamScores[team1].received += team2Scored;
-                        teamScores[team1].diff = teamScores[team1].scored - teamScores[team1].received;
+                            teamScores[team1].scored += team1Scored;
+                            teamScores[team1].received += team2Scored;
+                            teamScores[team1].diff = teamScores[team1].scored - teamScores[team1].received;
 
-                        teamScores[team2].scored += team2Scored;
-                        teamScores[team2].received += team1Scored;
-                        teamScores[team2].diff = teamScores[team2].scored - teamScores[team2].received;
+                            teamScores[team2].scored += team2Scored;
+                            teamScores[team2].received += team1Scored;
+                            teamScores[team2].diff = teamScores[team2].scored - teamScores[team2].received;
 
-                        // Punkte hinzufügen, wenn das Spiel gewonnen wurde
-                        if (team1Points === 2) {
-                            teamScores[team1].scored += 2;  // Team 1 gewinnt 2 Punkte
-                        } else if (team2Points === 2) {
-                            teamScores[team2].scored += 2;  // Team 2 gewinnt 2 Punkte
+                            // Punkte hinzufügen, wenn das Spiel gewonnen wurde
+                            if (team1Points === 2) {
+                                teamScores[team1].scored += 2;  // Team 1 gewinnt 2 Punkte
+                            } else if (team2Points === 2) {
+                                teamScores[team2].scored += 2;  // Team 2 gewinnt 2 Punkte
+                            }
                         }
                     });
 
