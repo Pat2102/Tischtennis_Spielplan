@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan v1.1</title>
+    <title>Spielplan v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -116,128 +116,95 @@
             }
         });
 
-     function renderSchedule(schedule) {
-    scheduleTable.innerHTML = '';
-    standingsTable.innerHTML = '';
+        function renderSchedule(schedule) {
+            scheduleTable.innerHTML = '';
+            standingsTable.innerHTML = '';
 
-    const standings = {};
+            const standings = {};
 
-    schedule.forEach(game => {
-        // Initialisiere Punkte
-        let pointsTeam1 = 0;
-        let pointsTeam2 = 0;
+            schedule.forEach(game => {
+                // Initialisiere Punkte
+                let pointsTeam1 = 0;
+                let pointsTeam2 = 0;
 
-        // Überprüfen, ob Ergebnisse vorhanden sind und berechne Punkte nur für vollständige Ergebnisse
-        if (game.results && game.results.length > 0) {
-            game.results.forEach(set => {
-                // Ignoriere leere oder ungültige Satz-Ergebnisse
-                if (!set) return;
+                // Überprüfen, ob Ergebnisse vorhanden sind und berechne Punkte nur für vollständige Ergebnisse
+                if (game.results && game.results.length > 0) {
+                    game.results.forEach(set => {
+                        // Ignoriere leere oder ungültige Satz-Ergebnisse
+                        if (!set) return;
 
-                const [score1, score2] = set.split('-').map(Number);
+                        const [score1, score2] = set.split('-').map(Number);
 
-                // Überprüfe auf ungültige Werte und setze auf 0
-                if (isNaN(score1)) score1 = 0;
-                if (isNaN(score2)) score2 = 0;
+                        // Überprüfe auf ungültige Werte und setze auf 0
+                        if (isNaN(score1)) score1 = 0;
+                        if (isNaN(score2)) score2 = 0;
 
-                pointsTeam1 += score1;
-                pointsTeam2 += score2;
+                        pointsTeam1 += score1;
+                        pointsTeam2 += score2;
+                    });
+                }
+
+                // Berechne finalResult nur, wenn es ein vollständiges Ergebnis gibt
+                let finalResult = game.finalResult;
+                if (!finalResult && game.results && game.results.length === 3) {
+                    finalResult = pointsTeam1 > pointsTeam2 ? `${game.team1} gewinnt` : `${game.team2} gewinnt`;
+                }
+
+                // Eintrag in der Spielplan-Tabelle
+                const row = `<tr>
+                    <td>Spiel ${game.match}</td>
+                    <td>${game.team1}</td>
+                    <td>${game.team2}</td>
+                    <td>${finalResult || 'Noch kein Ergebnis'}</td>
+                </tr>`;
+                scheduleTable.innerHTML += row;
+
+                // Initialisiere die Teams in der Standings-Tabelle, falls noch nicht vorhanden
+                if (!standings[game.team1]) standings[game.team1] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
+                if (!standings[game.team2]) standings[game.team2] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
+
+                // Punktestand und Spielausgang aktualisieren nur, wenn das Spiel abgeschlossen ist
+                if (finalResult) {
+                    standings[game.team1].scored += pointsTeam1;
+                    standings[game.team1].conceded += pointsTeam2;
+                    standings[game.team2].scored += pointsTeam2;
+                    standings[game.team2].conceded += pointsTeam1;
+
+                    standings[game.team1].goalDiff += pointsTeam1 - pointsTeam2;
+                    standings[game.team2].goalDiff += pointsTeam2 - pointsTeam1;
+
+                    if (finalResult.includes(game.team1)) {
+                        standings[game.team1].wins += 2;
+                        standings[game.team2].losses += 2;
+                    } else if (finalResult.includes(game.team2)) {
+                        standings[game.team1].losses += 2;
+                        standings[game.team2].wins += 2;
+                    }
+                }
+            });
+
+            // Sortiere die Tabelle nach Punkten und Punktverhältnis
+            const sortedStandings = Object.entries(standings)
+                .map(([team, data]) => ({ team, ...data }))
+                .sort((a, b) => b.wins - a.wins || b.goalDiff - a.goalDiff);
+
+            // Standings-Tabelle rendern
+            sortedStandings.forEach((entry, index) => {
+                const row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${entry.team}</td>
+                    <td>${entry.wins}:${entry.losses}</td>
+                    <td>${entry.scored}:${entry.conceded}</td>
+                    <td>${entry.goalDiff}</td>
+                </tr>`;
+                standingsTable.innerHTML += row;
             });
         }
 
-        // Berechne finalResult nur, wenn es ein vollständiges Ergebnis gibt
-        let finalResult = game.finalResult;
-        if (!finalResult && game.results && game.results.length === 3) {
-            finalResult = pointsTeam1 > pointsTeam2 ? `${game.team1} gewinnt` : `${game.team2} gewinnt`;
-        }
-
-        // Eintrag in der Spielplan-Tabelle
-        const row = `<tr>
-            <td>Spiel ${game.match}</td>
-            <td>${game.team1}</td>
-            <td>${game.team2}</td>
-            <td>${finalResult || 'Noch kein Ergebnis'}</td>
-        </tr>`;
-        scheduleTable.innerHTML += row;
-
-        // Initialisiere die Teams in der Standings-Tabelle, falls noch nicht vorhanden
-        if (!standings[game.team1]) standings[game.team1] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
-        if (!standings[game.team2]) standings[game.team2] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
-
-        // Punktestand und Spielausgang aktualisieren nur, wenn das Spiel abgeschlossen ist
-        if (finalResult) {
-            standings[game.team1].scored += pointsTeam1;
-            standings[game.team1].conceded += pointsTeam2;
-            standings[game.team2].scored += pointsTeam2;
-            standings[game.team2].conceded += pointsTeam1;
-
-            standings[game.team1].goalDiff += pointsTeam1 - pointsTeam2;
-            standings[game.team2].goalDiff += pointsTeam2 - pointsTeam1;
-
-            if (finalResult.includes(game.team1)) {
-                standings[game.team1].wins += 2;
-                standings[game.team2].losses += 2;
-            } else if (finalResult.includes(game.team2)) {
-                standings[game.team1].losses += 2;
-                standings[game.team2].wins += 2;
-            }
-        }
-    });
-
-    // Sortiere die Tabelle nach Punkten und Punktverhältnis
-    const sortedStandings = Object.entries(standings)
-        .map(([team, data]) => ({ team, ...data }))
-        .sort((a, b) => b.wins - a.wins || b.goalDiff - a.goalDiff);
-
-    // Standings-Tabelle rendern
-    sortedStandings.forEach((entry, index) => {
-        const row = `<tr>
-            <td>${index + 1}</td>
-            <td>${entry.team}</td>
-            <td>${entry.wins}:${entry.losses}</td>
-            <td>${entry.scored}:${entry.conceded}</td>
-            <td>${entry.goalDiff}</td>
-        </tr>`;
-        standingsTable.innerHTML += row;
-    });
-}
-
-// Funktion zum Abrufen von Daten aus Firebase und Aktualisieren der Anzeige
-function fetchSchedule() {
-    const databaseRef = firebase.database().ref('spielplan'); // Firebase Referenz
-
-    // Daten abrufen und rendern
-    databaseRef.once('value', snapshot => {
-        const schedule = snapshot.val() || [];
-        renderSchedule(schedule);
-    });
-}
-
-// Automatische regelmäßige Aktualisierung alle 10 Sekunden
-setInterval(fetchSchedule, 10000); // Alle 10 Sekunden die Daten abrufen
-
-
-// Funktion zum Abrufen von Daten aus Firebase und Aktualisieren der Anzeige
-function fetchSchedule() {
-    const databaseRef = firebase.database().ref('spielplan'); // Firebase Referenz
-
-    // Daten abrufen und rendern
-    databaseRef.once('value', snapshot => {
-        const schedule = snapshot.val() || [];
-        renderSchedule(schedule);
-    });
-}
-
-// Automatische regelmäßige Aktualisierung alle 10 Sekunden
-setInterval(fetchSchedule, 10000); // Alle 10 Sekunden die Daten abrufen
-
-
-
-
-
-
+        // Funktion zum Abrufen von Team-Daten und Anzeigen
         function renderTeams(teams) {
             teamsTable.innerHTML = '';
-            teams.forEach(team => {
+            Object.values(teams).forEach(team => {
                 const row = `<tr>
                     <td>${team.teamName}</td>
                     <td>${team.player1}</td>
@@ -246,6 +213,7 @@ setInterval(fetchSchedule, 10000); // Alle 10 Sekunden die Daten abrufen
                 teamsTable.innerHTML += row;
             });
         }
+
     </script>
 </body>
 </html>
