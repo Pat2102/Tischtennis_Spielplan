@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>TTT - Turbine Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,6 +22,15 @@
         }
         h3 {
             margin-top: 30px;
+        }
+        .winner {
+            background-color: #d4edda; /* Grün für Gewinner */
+        }
+        .not-played {
+            background-color: #f8d7da; /* Schwarz für nicht gespielte Spiele */
+        }
+        .not-played td {
+            color: black;
         }
     </style>
 </head>
@@ -115,12 +124,26 @@
                     const spielplan = snapshot.val();
                     spielplan.forEach(match => {
                         const row = document.createElement('tr');
+                        const resultText = match.result[0] ? match.result.join(', ') : "Noch nicht gespielt";
                         row.innerHTML = `
                             <td>${match.match}</td>
                             <td>${match.team1}</td>
                             <td>${match.team2}</td>
-                            <td>${match.result[0] ? match.result.join(', ') : "Noch nicht gespielt"}</td>
+                            <td>${resultText}</td>
                         `;
+                        
+                        // Farben basierend auf dem Ergebnis hinzufügen
+                        if (match.result[0]) {
+                            const [score1, score2] = match.result[0].split('-').map(Number);
+                            if (score1 > score2) {
+                                row.classList.add('winner');
+                            } else if (score2 > score1) {
+                                row.classList.add('winner');
+                            }
+                        } else {
+                            row.classList.add('not-played');
+                        }
+
                         scheduleTable.appendChild(row);
                     });
                 } else {
