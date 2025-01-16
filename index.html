@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.3</title>
+    <title>Team-Losung Tischtennis v1.4</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -234,26 +234,37 @@
     set(ref(db, 'spielplan'), schedule);
 }
 
-        function updateSetResult(matchIndex, setIndex, result) {
+function updateSetResult(matchIndex, setIndex, result) {
+    // Speichere das Satz-Ergebnis
     schedule[matchIndex].results[setIndex] = result;
 
-    // Berechnung des Endergebnisses
+    // Berechne das Endergebnis
     const results = schedule[matchIndex].results;
-    const team1Wins = results.filter(r => parseInt(r.split('-')[0]) > parseInt(r.split('-')[1])).length;
-    const team2Wins = results.filter(r => parseInt(r.split('-')[1]) > parseInt(r.split('-')[0])).length;
+    const team1Wins = results.filter(r => {
+        const [team1Points, team2Points] = r.split('-').map(Number);
+        return team1Points > team2Points;
+    }).length;
+    const team2Wins = results.filter(r => {
+        const [team1Points, team2Points] = r.split('-').map(Number);
+        return team2Points > team1Points;
+    }).length;
 
+    // Setze das finale Ergebnis, wenn ein Team 2 Sätze gewinnt
     if (team1Wins === 2 || team2Wins === 2) {
         schedule[matchIndex].finalResult = team1Wins === 2 ? `${schedule[matchIndex].team1} gewinnt` : `${schedule[matchIndex].team2} gewinnt`;
     } else {
         schedule[matchIndex].finalResult = 'Noch nicht entschieden';
     }
 
-    // Update der Anzeige
+    // Aktualisiere die Anzeige im Browser
     document.getElementById(`finalResult${matchIndex}`).textContent = schedule[matchIndex].finalResult;
 
-    // Speichern in Firebase
-    set(ref(db, 'spielplan'), schedule);
+    // Speichere das aktualisierte Spiel in Firebase
+    set(ref(db, 'spielplan'), schedule)
+        .then(() => console.log('Spielplan erfolgreich aktualisiert.'))
+        .catch(error => console.error('Fehler beim Speichern des Spielplans:', error));
 }
+
 
 
         function updateResult(matchIndex, result) {
