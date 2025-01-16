@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -53,6 +53,7 @@
                 <th>Punkte</th>
                 <th>Spiele</th>
                 <th>+/-</th>
+                <th>Punkte (Erzielt : Gegen)</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -121,30 +122,41 @@
 
                     spielplan.forEach(match => {
                         const [team1, team2] = [match.team1, match.team2];
-                        const [result1, result2, result3] = match.result;
-
-                        // Berechnung der Ergebnisse
-                        const { team1Wins, team2Wins } = calculateMatchResult(result1, result2, result3);
+                        const results = match.result;
 
                         // Initialisiere Team-Statistiken
                         if (!teamStats[team1]) {
-                            teamStats[team1] = { wins: 0, losses: 0, diff: 0 };
+                            teamStats[team1] = { wins: 0, losses: 0, diff: 0, scored: 0, conceded: 0 };
                         }
                         if (!teamStats[team2]) {
-                            teamStats[team2] = { wins: 0, losses: 0, diff: 0 };
+                            teamStats[team2] = { wins: 0, losses: 0, diff: 0, scored: 0, conceded: 0 };
                         }
 
-                        // Aktualisieren der Werte
-                        if (team1Wins > team2Wins) {
-                            teamStats[team1].wins += 1;
-                            teamStats[team2].losses += 1;
-                        } else if (team2Wins > team1Wins) {
-                            teamStats[team2].wins += 1;
-                            teamStats[team1].losses += 1;
-                        }
+                        // Berechnung der Ergebnisse
+                        results.forEach(result => {
+                            if (result) {
+                                const [score1, score2] = result.split('-').map(Number);
 
-                        teamStats[team1].diff += team1Wins - team2Wins;
-                        teamStats[team2].diff += team2Wins - team1Wins;
+                                // Punkte addieren
+                                teamStats[team1].scored += score1;
+                                teamStats[team1].conceded += score2;
+                                teamStats[team2].scored += score2;
+                                teamStats[team2].conceded += score1;
+
+                                // Siege und Niederlagen berechnen
+                                if (score1 > score2) {
+                                    teamStats[team1].wins += 1;
+                                    teamStats[team2].losses += 1;
+                                } else if (score2 > score1) {
+                                    teamStats[team2].wins += 1;
+                                    teamStats[team1].losses += 1;
+                                }
+                            }
+                        });
+
+                        // Differenz aktualisieren
+                        teamStats[team1].diff += teamStats[team1].scored - teamStats[team1].conceded;
+                        teamStats[team2].diff += teamStats[team2].scored - teamStats[team2].conceded;
                     });
 
                     // Rangliste sortieren und anzeigen
@@ -153,7 +165,9 @@
                             team,
                             points: `${stats.wins * 2}:${stats.losses * 2}`,
                             games: `${stats.wins + stats.losses}`,
-                            diff: stats.diff
+                            diff: stats.diff,
+                            scored: stats.scored,
+                            conceded: stats.conceded
                         }))
                         .sort((a, b) => {
                             const [aWins] = a.points.split(':').map(Number);
@@ -169,6 +183,7 @@
                             <td>${team.points}</td>
                             <td>${team.games}</td>
                             <td>${team.diff}</td>
+                            <td>${team.scored}:${team.conceded}</td>
                         `;
                         rankingTable.appendChild(row);
                     });
@@ -176,26 +191,6 @@
                     console.log('Keine Spielplan-Daten für Rangliste gefunden.');
                 }
             });
-        }
-
-        // Funktion zur Berechnung des Spielergebnisses
-        function calculateMatchResult(result1, result2, result3) {
-            let team1Wins = 0;
-            let team2Wins = 0;
-
-            [result1, result2, result3].forEach(result => {
-                if (result) {
-                    const [score1, score2] = result.split('-').map(Number);
-
-                    if (score1 > score2) {
-                        team1Wins++;
-                    } else if (score2 > score1) {
-                        team2Wins++;
-                    }
-                }
-            });
-
-            return { team1Wins, team2Wins };
         }
 
         // Beim Laden der Seite die Daten aus Firebase laden
