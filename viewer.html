@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,7 +79,6 @@
         const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
         const rankingTable = document.getElementById('rankingTable').querySelector('tbody');
 
-        // Funktion zum Laden der Teams und des Spielplans
         function loadTeamsAndSchedule() {
             // Teams aus Firebase laden
             get(ref(db, 'teams')).then(snapshot => {
@@ -106,7 +105,6 @@
                             <td>${match.team1}</td>
                             <td>${match.team2}</td>
                             <td>${match.result[0] ? match.result.join(', ') : "Noch nicht gespielt"}</td>
-
                         `;
                         scheduleTable.appendChild(row);
                     });
@@ -125,48 +123,51 @@
                         const [team1, team2] = [match.team1, match.team2];
                         const [result1, result2, result3] = match.result;
 
-                        // Berechnung der erzielten und erhaltenen Punkte
-                        const { team1Points, team2Points } = calculatePoints(result1, result2, result3);
+                        // Berechnung der Ergebnisse
+                        const { team1Wins, team2Wins } = calculateMatchResult(result1, result2, result3);
 
-                        // Punktestände initialisieren, wenn noch nicht vorhanden
+                        // Initialisiere Team-Statistiken
                         if (!teamStats[team1]) {
-                            teamStats[team1] = { points: 0, scored: 0, received: 0 };
+                            teamStats[team1] = { wins: 0, losses: 0, diff: 0 };
                         }
                         if (!teamStats[team2]) {
-                            teamStats[team2] = { points: 0, scored: 0, received: 0 };
+                            teamStats[team2] = { wins: 0, losses: 0, diff: 0 };
                         }
 
-                        // Aktualisieren der Punkte und erzielten/gegegnere Punktzahlen
-                        if (team1Points > team2Points) {
-                            teamStats[team1].points += 2; // 2 Punkte für einen Sieg
-                        } else if (team2Points > team1Points) {
-                            teamStats[team2].points += 2; // 2 Punkte für einen Sieg
+                        // Aktualisieren der Werte
+                        if (team1Wins > team2Wins) {
+                            teamStats[team1].wins += 1;
+                            teamStats[team2].losses += 1;
+                        } else if (team2Wins > team1Wins) {
+                            teamStats[team2].wins += 1;
+                            teamStats[team1].losses += 1;
                         }
 
-                        teamStats[team1].scored += team1Points;
-                        teamStats[team2].scored += team2Points;
-                        teamStats[team1].received += team2Points;
-                        teamStats[team2].received += team1Points;
+                        teamStats[team1].diff += team1Wins - team2Wins;
+                        teamStats[team2].diff += team2Wins - team1Wins;
                     });
 
                     // Rangliste sortieren und anzeigen
                     const sortedTeams = Object.entries(teamStats)
                         .map(([team, stats]) => ({
                             team,
-                            points: stats.points,
-                            scored: stats.scored,
-                            received: stats.received,
-                            diff: stats.scored - stats.received
+                            points: `${stats.wins * 2}:${stats.losses * 2}`,
+                            games: `${stats.wins + stats.losses}`,
+                            diff: stats.diff
                         }))
-                        .sort((a, b) => b.points - a.points || b.diff - a.diff);
+                        .sort((a, b) => {
+                            const [aWins] = a.points.split(':').map(Number);
+                            const [bWins] = b.points.split(':').map(Number);
+                            return bWins - aWins || b.diff - a.diff;
+                        });
 
                     sortedTeams.forEach((team, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${index + 1}</td>
                             <td>${team.team}</td>
-                            <td>${team.points}:0</td>
-                            <td>${team.scored}:${team.received}</td>
+                            <td>${team.points}</td>
+                            <td>${team.games}</td>
                             <td>${team.diff}</td>
                         `;
                         rankingTable.appendChild(row);
@@ -177,29 +178,24 @@
             });
         }
 
-        // Funktion zur Berechnung der Punkte
-        function calculatePoints(result1, result2, result3) {
-            let team1Points = 0;
-            let team2Points = 0;
+        // Funktion zur Berechnung des Spielergebnisses
+        function calculateMatchResult(result1, result2, result3) {
+            let team1Wins = 0;
+            let team2Wins = 0;
 
-            // Für jeden Satz wird geprüft, welches Team gewonnen hat
             [result1, result2, result3].forEach(result => {
                 if (result) {
                     const [score1, score2] = result.split('-').map(Number);
 
-                    team1Points += score1;
-                    team2Points += score2;
+                    if (score1 > score2) {
+                        team1Wins++;
+                    } else if (score2 > score1) {
+                        team2Wins++;
+                    }
                 }
             });
 
-            return { team1Points, team2Points };
-        }
-
-        // Formatierung der Spiele-Ergebnisse für die "Ergebnis"-Spalte
-        function formatPoints(results) {
-            const team1Points = results.map(result => result.split('-')[0]).reduce((sum, current) => sum + Number(current), 0);
-            const team2Points = results.map(result => result.split('-')[1]).reduce((sum, current) => sum + Number(current), 0);
-            return `${team1Points}:${team2Points}`;
+            return { team1Wins, team2Wins };
         }
 
         // Beim Laden der Seite die Daten aus Firebase laden
