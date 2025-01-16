@@ -127,9 +127,12 @@
         let pointsTeam1 = 0;
         let pointsTeam2 = 0;
 
-        // Falls 'results' vorhanden, berechne die Punkte
+        // Falls 'results' vorhanden und nicht leer, berechne die Punkte
         if (game.results && game.results.length > 0) {
             game.results.forEach(set => {
+                // Ignoriere leere oder ungültige Satz-Ergebnisse
+                if (!set) return;
+
                 const [score1, score2] = set.split('-').map(Number);
 
                 // Überprüfe auf ungültige Werte und setze auf 0
@@ -195,6 +198,7 @@
         standingsTable.innerHTML += row;
     });
 }
+
 
 
 
