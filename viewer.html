@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan v1.2</title>
+    <title>Aktueller Stand - Tischtennis Turnier</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,13 +20,29 @@
             padding: 10px;
             text-align: center;
         }
+        .winner {
+            background-color: lightgreen;
+        }
     </style>
 </head>
 <body>
-    <h1>TTT</h1>
-    <p>Spielplan für das Turbine-Tischtennis-Turnier:</p>
+    <h1>Aktueller Stand - Tischtennis Turnier</h1>
 
-    <h3>Spielplan:</h3>
+    <h3>Teamübersicht:</h3>
+    <table id="teamsTable">
+        <thead>
+            <tr>
+                <th>Team</th>
+                <th>Mitglied 1</th>
+                <th>Mitglied 2</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Team-Mitglieder werden hier eingefügt -->
+        </tbody>
+    </table>
+
+    <h3>Spielplan und Ergebnisse:</h3>
     <table id="scheduleTable">
         <thead>
             <tr>
@@ -37,37 +53,22 @@
             </tr>
         </thead>
         <tbody>
-            <!-- Der Spielplan wird hier eingefügt -->
+            <!-- Der Spielplan und Ergebnisse werden hier angezeigt -->
         </tbody>
     </table>
 
-    <h3>Zwischenstand:</h3>
+    <h3>Aktuelle Tabelle:</h3>
     <table id="standingsTable">
         <thead>
             <tr>
                 <th>Platz</th>
                 <th>Team</th>
                 <th>Punkte</th>
-                <th>Spiele</th>
                 <th>+/-</th>
             </tr>
         </thead>
         <tbody>
-            <!-- Der Zwischenstand wird hier eingefügt -->
-        </tbody>
-    </table>
-
-    <h3>Team-Mitglieder:</h3>
-    <table id="teamsTable">
-        <thead>
-            <tr>
-                <th>Team</th>
-                <th>Mitglied 1</th>
-                <th>Mitglied 2</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Die Team-Mitglieder werden hier eingefügt -->
+            <!-- Die aktuelle Rangliste wird hier eingefügt -->
         </tbody>
     </table>
 
@@ -87,133 +88,58 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-        const standingsTable = document.getElementById('standingsTable').querySelector('tbody');
-        const teamsTable = document.getElementById('teamsTable').querySelector('tbody');
-
-        const scheduleRef = ref(db, 'spielplan');
         const teamsRef = ref(db, 'teams');
+        const scheduleRef = ref(db, 'spielplan');
 
-        // Spielplan und Zwischenstand rendern
-        onValue(scheduleRef, (snapshot) => {
-            const schedule = snapshot.val();
-            if (schedule) {
-                renderSchedule(schedule);
-            } else {
-                scheduleTable.innerHTML = `<tr><td colspan="4">Kein Spielplan verfügbar</td></tr>`;
-                standingsTable.innerHTML = `<tr><td colspan="5">Keine Ergebnisse verfügbar</td></tr>`;
-            }
-        });
-
-        // Team-Mitglieder rendern
-        onValue(teamsRef, (snapshot) => {
+        // Teams rendern
+        onValue(teamsRef, snapshot => {
             const teams = snapshot.val();
             if (teams) {
                 renderTeams(teams);
-            } else {
-                teamsTable.innerHTML = `<tr><td colspan="3">Keine Teams verfügbar</td></tr>`;
             }
         });
 
-        function renderSchedule(schedule) {
-            scheduleTable.innerHTML = '';
-            standingsTable.innerHTML = '';
-
-            const standings = {};
-
-            schedule.forEach(game => {
-                // Initialisiere Punkte
-                let pointsTeam1 = 0;
-                let pointsTeam2 = 0;
-
-                // Überprüfen, ob Ergebnisse vorhanden sind und berechne Punkte nur für vollständige Ergebnisse
-                if (game.results && game.results.length > 0) {
-                    game.results.forEach(set => {
-                        // Ignoriere leere oder ungültige Satz-Ergebnisse
-                        if (!set) return;
-
-                        const [score1, score2] = set.split('-').map(Number);
-
-                        // Überprüfe auf ungültige Werte und setze auf 0
-                        if (isNaN(score1)) score1 = 0;
-                        if (isNaN(score2)) score2 = 0;
-
-                        pointsTeam1 += score1;
-                        pointsTeam2 += score2;
-                    });
-                }
-
-                // Berechne finalResult nur, wenn es ein vollständiges Ergebnis gibt
-                let finalResult = game.finalResult;
-                if (!finalResult && game.results && game.results.length === 3) {
-                    finalResult = pointsTeam1 > pointsTeam2 ? `${game.team1} gewinnt` : `${game.team2} gewinnt`;
-                }
-
-                // Eintrag in der Spielplan-Tabelle
-                const row = `<tr>
-                    <td>Spiel ${game.match}</td>
-                    <td>${game.team1}</td>
-                    <td>${game.team2}</td>
-                    <td>${finalResult || 'Noch kein Ergebnis'}</td>
-                </tr>`;
-                scheduleTable.innerHTML += row;
-
-                // Initialisiere die Teams in der Standings-Tabelle, falls noch nicht vorhanden
-                if (!standings[game.team1]) standings[game.team1] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
-                if (!standings[game.team2]) standings[game.team2] = { wins: 0, losses: 0, scored: 0, conceded: 0, goalDiff: 0 };
-
-                // Punktestand und Spielausgang aktualisieren nur, wenn das Spiel abgeschlossen ist
-                if (finalResult) {
-                    standings[game.team1].scored += pointsTeam1;
-                    standings[game.team1].conceded += pointsTeam2;
-                    standings[game.team2].scored += pointsTeam2;
-                    standings[game.team2].conceded += pointsTeam1;
-
-                    standings[game.team1].goalDiff += pointsTeam1 - pointsTeam2;
-                    standings[game.team2].goalDiff += pointsTeam2 - pointsTeam1;
-
-                    if (finalResult.includes(game.team1)) {
-                        standings[game.team1].wins += 2;
-                        standings[game.team2].losses += 2;
-                    } else if (finalResult.includes(game.team2)) {
-                        standings[game.team1].losses += 2;
-                        standings[game.team2].wins += 2;
-                    }
-                }
-            });
-
-            // Sortiere die Tabelle nach Punkten und Punktverhältnis
-            const sortedStandings = Object.entries(standings)
-                .map(([team, data]) => ({ team, ...data }))
-                .sort((a, b) => b.wins - a.wins || b.goalDiff - a.goalDiff);
-
-            // Standings-Tabelle rendern
-            sortedStandings.forEach((entry, index) => {
-                const row = `<tr>
-                    <td>${index + 1}</td>
-                    <td>${entry.team}</td>
-                    <td>${entry.wins}:${entry.losses}</td>
-                    <td>${entry.scored}:${entry.conceded}</td>
-                    <td>${entry.goalDiff}</td>
-                </tr>`;
-                standingsTable.innerHTML += row;
-            });
-        }
-
-        // Funktion zum Abrufen von Team-Daten und Anzeigen
         function renderTeams(teams) {
+            const teamsTable = document.getElementById('teamsTable').querySelector('tbody');
             teamsTable.innerHTML = '';
-            Object.values(teams).forEach(team => {
-                const row = `<tr>
-                    <td>${team.teamName}</td>
-                    <td>${team.player1}</td>
-                    <td>${team.player2}</td>
-                </tr>`;
+
+            Object.keys(teams).forEach(teamKey => {
+                const team = teams[teamKey];
+                const row = `
+                    <tr>
+                        <td>${team.name}</td>
+                        <td>${team.player1}</td>
+                        <td>${team.player2}</td>
+                    </tr>
+                `;
                 teamsTable.innerHTML += row;
             });
         }
 
+        // Spielplan rendern
+        onValue(scheduleRef, snapshot => {
+            const schedule = snapshot.val();
+            if (schedule) {
+                renderSchedule(schedule);
+            }
+        });
+
+        function renderSchedule(schedule) {
+            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+            scheduleTable.innerHTML = '';
+
+            Object.values(schedule).forEach(match => {
+                const winner = match.finalResult.includes('gewinnt') ? 'winner' : '';
+                const row = `
+                    <tr class="${winner}">
+                        <td>${match.team1} vs ${match.team2}</td>
+                        <td>${match.results.join(', ') || 'Noch kein Ergebnis'}</td>
+                        <td>${match.finalResult || 'Noch kein Ergebnis'}</td>
+                    </tr>
+                `;
+                scheduleTable.innerHTML += row;
+            });
+        }
     </script>
 </body>
 </html>
