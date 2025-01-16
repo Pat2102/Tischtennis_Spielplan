@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -29,7 +29,16 @@
     <h1>Tischtennis Turnier - Aktueller Stand</h1>
 
     <h3>Teams:</h3>
-    <ul id="teamList"></ul>
+    <table id="teamTable">
+        <thead>
+            <tr>
+                <th>Teamname</th>
+                <th>Spieler 1</th>
+                <th>Spieler 2</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
     <h3>Spielplan:</h3>
     <table id="scheduleTable">
@@ -76,7 +85,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        const teamList = document.getElementById('teamList');
+        const teamTable = document.getElementById('teamTable').querySelector('tbody');
         const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
         const rankingTable = document.getElementById('rankingTable').querySelector('tbody');
 
@@ -87,9 +96,13 @@
                 if (snapshot.exists()) {
                     const teams = snapshot.val();
                     teams.forEach(team => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = `${team.teamName} - ${team.player1} und ${team.player2}`;
-                        teamList.appendChild(listItem);
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${team.teamName}</td>
+                            <td>${team.player1}</td>
+                            <td>${team.player2}</td>
+                        `;
+                        teamTable.appendChild(row);
                     });
                 } else {
                     console.log('Keine Teams gefunden.');
