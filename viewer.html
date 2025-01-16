@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,8 +50,9 @@
             <tr>
                 <th>Platz</th>
                 <th>Teamname</th>
+                <th>Punkte</th>
                 <th>Spiele</th>
-                <th>Differenz</th>
+                <th>+/-</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -117,7 +118,7 @@
             get(ref(db, 'spielplan')).then(snapshot => {
                 if (snapshot.exists()) {
                     const spielplan = snapshot.val();
-                    const teamScores = {};
+                    const teamStats = {};
 
                     spielplan.forEach(match => {
                         const [team1, team2] = [match.team1, match.team2];
@@ -126,35 +127,44 @@
                         // Berechnung der erzielten und erhaltenen Punkte
                         const { team1Points, team2Points } = calculatePoints(result1, result2, result3);
 
-                        // Punkte für jedes Team speichern
-                        if (!teamScores[team1]) {
-                            teamScores[team1] = { scored: 0, received: 0, diff: 0 };
+                        // Punktestände initialisieren, wenn noch nicht vorhanden
+                        if (!teamStats[team1]) {
+                            teamStats[team1] = { points: 0, scored: 0, received: 0 };
                         }
-                        if (!teamScores[team2]) {
-                            teamScores[team2] = { scored: 0, received: 0, diff: 0 };
+                        if (!teamStats[team2]) {
+                            teamStats[team2] = { points: 0, scored: 0, received: 0 };
                         }
 
-                        // Berechnen der Differenz und Punktestand aktualisieren
+                        // Aktualisieren der Punkte und erzielten/gegegnere Punktzahlen
                         if (team1Points > team2Points) {
-                            teamScores[team1].scored += 2;
+                            teamStats[team1].points += 2; // 2 Punkte für einen Sieg
                         } else if (team2Points > team1Points) {
-                            teamScores[team2].scored += 2;
+                            teamStats[team2].points += 2; // 2 Punkte für einen Sieg
                         }
 
-                        teamScores[team1].received += team2Points;
-                        teamScores[team2].received += team1Points;
+                        teamStats[team1].scored += team1Points;
+                        teamStats[team2].scored += team2Points;
+                        teamStats[team1].received += team2Points;
+                        teamStats[team2].received += team1Points;
                     });
 
                     // Rangliste sortieren und anzeigen
-                    const sortedTeams = Object.entries(teamScores)
-                        .map(([team, { scored, received, diff }]) => ({ team, scored, received, diff }))
-                        .sort((a, b) => b.scored - a.scored || b.diff - a.diff);
+                    const sortedTeams = Object.entries(teamStats)
+                        .map(([team, stats]) => ({
+                            team,
+                            points: stats.points,
+                            scored: stats.scored,
+                            received: stats.received,
+                            diff: stats.scored - stats.received
+                        }))
+                        .sort((a, b) => b.points - a.points || b.diff - a.diff);
 
                     sortedTeams.forEach((team, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${index + 1}</td>
                             <td>${team.team}</td>
+                            <td>${team.points}:0</td>
                             <td>${team.scored}:${team.received}</td>
                             <td>${team.diff}</td>
                         `;
@@ -184,10 +194,7 @@
                 }
             });
 
-            return {
-                team1Points,
-                team2Points
-            };
+            return { team1Points, team2Points };
         }
 
         // Formatierung der Spiele-Ergebnisse für die "Ergebnis"-Spalte
