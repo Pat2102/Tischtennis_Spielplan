@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -135,13 +135,14 @@
                             teamStats[team2] = { points: 0, scored: 0, received: 0 };
                         }
 
-                        // Aktualisieren der Punkte und erzielten/gegegnere Punktzahlen
+                        // Punktestand und "Punkte" für gewonnenes/verlorenes Spiel aktualisieren
                         if (team1Points > team2Points) {
                             teamStats[team1].points += 2; // 2 Punkte für einen Sieg
                         } else if (team2Points > team1Points) {
                             teamStats[team2].points += 2; // 2 Punkte für einen Sieg
                         }
 
+                        // Spielpunkte summieren
                         teamStats[team1].scored += team1Points;
                         teamStats[team2].scored += team2Points;
                         teamStats[team1].received += team2Points;
@@ -164,7 +165,7 @@
                         row.innerHTML = `
                             <td>${index + 1}</td>
                             <td>${team.team}</td>
-                            <td>${team.points}:0</td>
+                            <td>${team.points === 0 ? '0:2' : '2:0'}</td> <!-- Anzeige der 0:2 für verlorenes Spiel -->
                             <td>${team.scored}:${team.received}</td>
                             <td>${team.diff}</td>
                         `;
