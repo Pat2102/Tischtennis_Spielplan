@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>V1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -76,7 +76,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getDatabase, ref, get, onChildAdded, onChildChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
@@ -101,6 +101,7 @@
             get(ref(db, 'teams')).then(snapshot => {
                 if (snapshot.exists()) {
                     const teams = snapshot.val();
+                    teamTable.innerHTML = ''; // Clear previous entries
                     teams.forEach(team => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -119,6 +120,7 @@
             get(ref(db, 'spielplan')).then(snapshot => {
                 if (snapshot.exists()) {
                     const spielplan = snapshot.val();
+                    scheduleTable.innerHTML = ''; // Clear previous entries
                     spielplan.forEach(match => {
                         const row = document.createElement('tr');
                         const resultText = match.result[0] ? match.result.join(', ') : "Noch nicht gespielt";
@@ -213,6 +215,7 @@
                             return bWins - aWins || b.diff - a.diff;
                         });
 
+                    rankingTable.innerHTML = ''; // Clear previous entries
                     sortedTeams.forEach((team, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -233,6 +236,10 @@
 
         // Beim Laden der Seite die Daten aus Firebase laden
         window.onload = loadTeamsAndSchedule;
+
+        // Echtzeit-Updates für Änderungen an den Daten
+        onChildChanged(ref(db, 'spielplan'), loadTeamsAndSchedule);
+        onChildAdded(ref(db, 'spielplan'), loadTeamsAndSchedule);
     </script>
 </body>
 </html>
