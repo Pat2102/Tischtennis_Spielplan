@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTT - Turbine Tischtennis Turnier - Aktueller Stand</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,10 +27,7 @@
             background-color: #d4edda; /* Grün für Gewinner */
         }
         .not-played {
-            background-color: #f8d7da; /* Schwarz für nicht gespielte Spiele */
-        }
-        .not-played td {
-            color: black;
+            color: black; /* Keine farbliche Markierung für nicht gespielte Spiele */
         }
     </style>
 </head>
@@ -132,16 +129,14 @@
                             <td>${resultText}</td>
                         `;
                         
-                        // Farben basierend auf dem Ergebnis hinzufügen
+                        // Nur das Gewinnerteam wird grün eingefärbt
                         if (match.result[0]) {
                             const [score1, score2] = match.result[0].split('-').map(Number);
                             if (score1 > score2) {
-                                row.classList.add('winner');
+                                row.querySelector('td:nth-child(2)').classList.add('winner'); // Team 1 gewinnen
                             } else if (score2 > score1) {
-                                row.classList.add('winner');
+                                row.querySelector('td:nth-child(3)').classList.add('winner'); // Team 2 gewinnen
                             }
-                        } else {
-                            row.classList.add('not-played');
                         }
 
                         scheduleTable.appendChild(row);
