@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis-Team-Losung v2.1</title>
+    <title>Tischtennis-Team-Losung v2.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -167,16 +167,18 @@
                         <th>Spiel</th>
                         <th>Team 1</th>
                         <th>Team 2</th>
+                        <th>Ergebnis</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${schedule.map(s => `<tr>
-                        <td>${s.match}</td>
-                        <td>${s.team1}</td>
-                        <td>${s.team2}</td>
-                    </tr>`).join('')}
-                </tbody>
-            `;
+        ${schedule.map(s => `<tr>
+          <td>${s.match}</td>
+          <td>${s.team1}</td>
+          <td>${s.team2}</td>
+          <td><input type="text" data-match-id="${s.match}" class="result-input" placeholder="Ergebnis"></td>
+        </tr>`).join('')}
+      </tbody>
+    `;
             outputContent.appendChild(table);
         }
 
@@ -248,6 +250,20 @@
                 </tbody>
             `;
             outputContent.appendChild(table);
+
+             // Funktion zum Speichern der Ergebnisse
+    const resultInputs = document.querySelectorAll('.result-input');
+    resultInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        const matchId = input.dataset.matchId;
+        const result = input.value;
+        const match = schedule.find(m => m.match === matchId);
+        match.result = result;
+        // Hier kannst du das Ergebnis z.B. in der Firebase speichern
+        console.log('Ergebnis für Spiel', matchId, ':', result);
+      });
+    });
+  }
 
             // Platzierungsspiele (falls notwendig)
             const placementMatches = [];
