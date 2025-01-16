@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
+    <title>Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,7 +51,7 @@
                 <th>Platz</th>
                 <th>Teamname</th>
                 <th>Spiele</th>
-                <th>+/-</th>
+                <th>Differenz</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -124,7 +124,7 @@
                         const [result1, result2, result3] = match.result;
 
                         // Berechnung der erzielten und erhaltenen Punkte
-                        const { team1Scored, team2Scored, team1Points, team2Points } = calculatePoints(result1, result2, result3);
+                        const { team1Points, team2Points, team1Scored, team2Scored } = calculatePoints(result1, result2, result3);
 
                         // Punkte für jedes Team speichern
                         if (!teamScores[team1]) {
@@ -141,6 +141,13 @@
                         teamScores[team2].scored += team2Scored;
                         teamScores[team2].received += team1Scored;
                         teamScores[team2].diff = teamScores[team2].scored - teamScores[team2].received;
+
+                        // Punkte hinzufügen, wenn das Spiel gewonnen wurde
+                        if (team1Points === 2) {
+                            teamScores[team1].scored += 2;  // Team 1 gewinnt 2 Punkte
+                        } else if (team2Points === 2) {
+                            teamScores[team2].scored += 2;  // Team 2 gewinnt 2 Punkte
+                        }
                     });
 
                     // Rangliste sortieren und anzeigen
@@ -168,6 +175,8 @@
         function calculatePoints(result1, result2, result3) {
             let team1Scored = 0;
             let team2Scored = 0;
+            let team1Points = 0;
+            let team2Points = 0;
 
             // Berechnung der Punkte aus den Satz-Ergebnissen
             [result1, result2, result3].forEach(result => {
@@ -175,12 +184,19 @@
                     const [score1, score2] = result.split('-').map(Number);
                     team1Scored += score1;
                     team2Scored += score2;
+
+                    // Bestimmen, wer den Satz gewonnen hat
+                    if (score1 > score2) {
+                        team1Points++;
+                    } else if (score2 > score1) {
+                        team2Points++;
+                    }
                 }
             });
 
             return {
-                team1Points: team1Scored > team2Scored ? 2 : (team1Scored === team2Scored ? 1 : 0),
-                team2Points: team2Scored > team1Scored ? 2 : (team1Scored === team2Scored ? 1 : 0),
+                team1Points,
+                team2Points,
                 team1Scored,
                 team2Scored
             };
