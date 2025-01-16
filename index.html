@@ -76,12 +76,17 @@
 
         function addPlayer() {
             const playerName = document.getElementById('playerName').value;
-            if (playerName && !players.includes(playerName)) {
+            if (playerName.trim() === "") {
+                alert("Bitte einen Spielernamen eingeben.");
+                return;
+            }
+            if (!players.includes(playerName)) {
                 players.push(playerName);
                 alert(`${playerName} wurde hinzugefügt.`);
-                document.getElementById('playerName').value = '';
+                document.getElementById('playerName').value = ''; // Eingabefeld leeren
+                console.log(players); // Debugging: Ausgabe der Spielerliste im Browser-Console
             } else {
-                alert('Bitte einen gültigen Spielernamen eingeben.');
+                alert("Dieser Spieler wurde bereits hinzugefügt.");
             }
         }
 
