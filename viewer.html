@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -124,6 +124,9 @@
                     spielplan.forEach(match => {
                         const [team1, team2] = [match.team1, match.team2];
                         const results = match.result;
+
+                        // Wenn das Spiel noch nicht gespielt wurde, überspringen
+                        if (!results[0]) return;
 
                         // Initialisiere Team-Statistiken, wenn noch nicht vorhanden
                         if (!teamStats[team1]) {
