@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spielplan v1.1</title>
+    <title>Spielplan v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -116,7 +116,7 @@
             }
         });
 
-      function renderSchedule(schedule) {
+     function renderSchedule(schedule) {
     scheduleTable.innerHTML = '';
     standingsTable.innerHTML = '';
 
@@ -198,6 +198,21 @@
         standingsTable.innerHTML += row;
     });
 }
+
+// Funktion zum Abrufen von Daten aus Firebase und Aktualisieren der Anzeige
+function fetchSchedule() {
+    const databaseRef = firebase.database().ref('spielplan'); // Firebase Referenz
+
+    // Daten abrufen und rendern
+    databaseRef.once('value', snapshot => {
+        const schedule = snapshot.val() || [];
+        renderSchedule(schedule);
+    });
+}
+
+// Automatische regelmäßige Aktualisierung alle 10 Sekunden
+setInterval(fetchSchedule, 10000); // Alle 10 Sekunden die Daten abrufen
+
 
 
 
