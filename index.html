@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team-Losung Tischtennis v1.1</title>
+    <title>Team-Losung Tischtennis v1.2</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -81,7 +81,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
@@ -145,135 +145,118 @@
             teams[teamIndex].teamName = newName;
         }
 
-      function saveTeamNames() {
-    const teamTable = document.getElementById('teamTable').querySelector('tbody').rows;
+        function saveTeamNames() {
+            const teamTable = document.getElementById('teamTable').querySelector('tbody').rows;
 
-    for (let i = 0; i < teamTable.length; i++) {
-        const newName = teamTable[i].querySelector('.rename-input').value.trim();
-        teams[i].teamName = newName;
-    }
+            for (let i = 0; i < teamTable.length; i++) {
+                const newName = teamTable[i].querySelector('.rename-input').value.trim();
+                teams[i].teamName = newName;
+            }
 
-    set(ref(db, 'teams'), teams)
-        .then(() => {
-            alert('Teamnamen erfolgreich gespeichert.');
-            updateScheduleWithNewNames(); // Aktualisiere Spielplan
-        })
-        .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
-}
-
-
-      function updateScheduleWithNewNames() {
-    get(ref(db, 'teams')).then(snapshot => {
-        if (snapshot.exists()) {
-            const updatedTeams = snapshot.val();
-
-            // Spielplan aktualisieren
-            schedule = schedule.map(game => {
-                const team1 = updatedTeams.find(team => team.teamName === game.team1);
-                const team2 = updatedTeams.find(team => team.teamName === game.team2);
-
-                return {
-                    ...game,
-                    team1: team1 ? team1.teamName : game.team1,
-                    team2: team2 ? team2.teamName : game.team2,
-                };
-            });
-
-            // Speichern in Firebase
-            set(ref(db, 'spielplan'), schedule)
-                .then(() => alert('Spielplan erfolgreich aktualisiert.'))
-                .catch(error => console.error('Fehler beim Aktualisieren des Spielplans:', error));
-        } else {
-            alert('Keine Teams in Firebase gefunden.');
+            set(ref(db, 'teams'), teams)
+                .then(() => {
+                    alert('Teamnamen erfolgreich gespeichert.');
+                    updateScheduleWithNewNames();
+                })
+                .catch(error => console.error('Fehler beim Speichern der Teamnamen:', error));
         }
-    }).catch(error => console.error('Fehler beim Laden der Teams:', error));
-}
 
+        function updateScheduleWithNewNames() {
+            get(ref(db, 'teams')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const updatedTeams = snapshot.val();
 
-        
-       function generateSchedule() {
-    const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-    scheduleTable.innerHTML = '';
-    schedule = [];
+                    schedule = schedule.map(game => {
+                        const team1 = updatedTeams.find(team => team.teamName === game.team1);
+                        const team2 = updatedTeams.find(team => team.teamName === game.team2);
 
-    if (teams.length < 2) {
-        alert('Es müssen mindestens zwei Teams vorhanden sein!');
-        return;
-    }
+                        return {
+                            ...game,
+                            team1: team1 ? team1.teamName : game.team1,
+                            team2: team2 ? team2.teamName : game.team2,
+                        };
+                    });
 
-    set(ref(db, 'spielplan'), null);
-
-    const availableMatches = [];
-    for (let i = 0; i < teams.length; i++) {
-        for (let j = i + 1; j < teams.length; j++) {
-            availableMatches.push({ team1: teams[i].teamName, team2: teams[j].teamName });
+                    set(ref(db, 'spielplan'), schedule)
+                        .then(() => alert('Spielplan erfolgreich aktualisiert.'))
+                        .catch(error => console.error('Fehler beim Aktualisieren des Spielplans:', error));
+                } else {
+                    alert('Keine Teams in Firebase gefunden.');
+                }
+            }).catch(error => console.error('Fehler beim Laden der Teams:', error));
         }
-    }
 
-    let matchCount = 1;
-    while (availableMatches.length > 0) {
-        const nextMatch = availableMatches.shift();
-        schedule.push({
-            match: matchCount++,
-            ...nextMatch,
-            results: ['', '', ''], // Platz für bis zu 3 Satz-Ergebnisse
-            finalResult: '' // Endergebnis
-        });
+        function generateSchedule() {
+            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+            scheduleTable.innerHTML = '';
+            schedule = [];
 
-        scheduleTable.innerHTML += `<tr>
-            <td>Spiel ${matchCount - 1}</td>
-            <td>${nextMatch.team1}</td>
-            <td>${nextMatch.team2}</td>
-            <td><input type="text" class="result-input" placeholder="Satz 1" onchange="updateSetResult(${matchCount - 2}, 0, this.value)"></td>
-            <td><input type="text" class="result-input" placeholder="Satz 2" onchange="updateSetResult(${matchCount - 2}, 1, this.value)"></td>
-            <td><input type="text" class="result-input" placeholder="Satz 3" onchange="updateSetResult(${matchCount - 2}, 2, this.value)"></td>
-            <td><span id="finalResult${matchCount - 2}"></span></td>
-        </tr>`;
-    }
+            if (teams.length < 2) {
+                alert('Es müssen mindestens zwei Teams vorhanden sein!');
+                return;
+            }
 
-    set(ref(db, 'spielplan'), schedule);
-}
+            set(ref(db, 'spielplan'), null);
 
-function updateSetResult(matchIndex, setIndex, result) {
-    // Prüfen, ob das Ergebnis im Format "Punkte1-Punkte2" ist
-    const resultRegex = /^\d+-\d+$/;
-    if (!resultRegex.test(result)) {
-        alert('Ungültiges Ergebnisformat. Bitte verwenden Sie das Format "11-9" oder "21-19".');
-        return;
-    }
+            const availableMatches = [];
+            for (let i = 0; i < teams.length; i++) {
+                for (let j = i + 1; j < teams.length; j++) {
+                    availableMatches.push({ team1: teams[i].teamName, team2: teams[j].teamName });
+                }
+            }
 
-    // Ergebnis in den Spielplan eintragen
-    schedule[matchIndex].results[setIndex] = result;
+            let matchCount = 1;
+            while (availableMatches.length > 0) {
+                const nextMatch = availableMatches.shift();
+                schedule.push({
+                    match: matchCount++,
+                    ...nextMatch,
+                    results: ['', '', ''],
+                    finalResult: ''
+                });
 
-    // Berechne das Endergebnis
-    const results = schedule[matchIndex].results;
-    const team1Wins = results.filter(r => {
-        const [team1Points, team2Points] = r.split('-').map(Number);
-        return team1Points > team2Points;
-    }).length;
-    const team2Wins = results.filter(r => {
-        const [team1Points, team2Points] = r.split('-').map(Number);
-        return team2Points > team1Points;
-    }).length;
+                scheduleTable.innerHTML += `<tr>
+                    <td>Spiel ${matchCount - 1}</td>
+                    <td>${nextMatch.team1}</td>
+                    <td>${nextMatch.team2}</td>
+                    <td><input type="text" class="result-input" placeholder="Satz 1" onchange="updateSetResult(${matchCount - 2}, 0, this.value)"></td>
+                    <td><input type="text" class="result-input" placeholder="Satz 2" onchange="updateSetResult(${matchCount - 2}, 1, this.value)"></td>
+                    <td><input type="text" class="result-input" placeholder="Satz 3" onchange="updateSetResult(${matchCount - 2}, 2, this.value)"></td>
+                    <td><span id="finalResult${matchCount - 2}"></span></td>
+                </tr>`;
+            }
 
-    if (team1Wins === 2 || team2Wins === 2) {
-        schedule[matchIndex].finalResult = team1Wins === 2 ? `${schedule[matchIndex].team1} gewinnt` : `${schedule[matchIndex].team2} gewinnt`;
-    } else {
-        schedule[matchIndex].finalResult = '';
-    }
-
-    // Speichere die Ergebnisse in Firebase
-    set(ref(db, 'spielplan'), schedule)
-        .then(() => console.log('Ergebnisse erfolgreich aktualisiert.'))
-        .catch(error => console.error('Fehler beim Speichern der Ergebnisse:', error));
-}
-
-
-
-
-        function updateResult(matchIndex, result) {
-            schedule[matchIndex].result = result;
             set(ref(db, 'spielplan'), schedule);
+        }
+
+        function updateSetResult(matchIndex, setIndex, result) {
+            const resultRegex = /^\d+-\d+$/;
+            if (!resultRegex.test(result)) {
+                alert('Ungültiges Ergebnisformat. Bitte verwenden Sie das Format "11-9" oder "21-19".');
+                return;
+            }
+
+            schedule[matchIndex].results[setIndex] = result;
+
+            const results = schedule[matchIndex].results;
+            const team1Wins = results.filter(r => {
+                const [team1Points, team2Points] = r.split('-').map(Number);
+                return team1Points > team2Points;
+            }).length;
+            const team2Wins = results.filter(r => {
+                const [team1Points, team2Points] = r.split('-').map(Number);
+                return team2Points > team1Points;
+            }).length;
+
+            if (team1Wins === 2 || team2Wins === 2) {
+                schedule[matchIndex].finalResult = team1Wins === 2 ? `${schedule[matchIndex].team1} gewinnt` : `${schedule[matchIndex].team2} gewinnt`;
+            } else {
+                schedule[matchIndex].finalResult = '';
+            }
+
+            set(ref(db, 'spielplan'), schedule)
+                .then(() => console.log('Ergebnisse erfolgreich aktualisiert.'))
+                .catch(error => console.error('Fehler beim Speichern der Ergebnisse:', error));
         }
 
         function shuffle(array) {
@@ -287,7 +270,7 @@ function updateSetResult(matchIndex, setIndex, result) {
         window.drawTeams = drawTeams;
         window.saveTeamNames = saveTeamNames;
         window.generateSchedule = generateSchedule;
-        window.updateResult = updateResult;
+        window.updateSetResult = updateSetResult;
     </script>
 </body>
 </html>
