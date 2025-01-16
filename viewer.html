@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aktueller Stand - Tischtennis Turnier</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,29 +20,18 @@
             padding: 10px;
             text-align: center;
         }
-        .winner {
-            background-color: lightgreen;
+        h3 {
+            margin-top: 30px;
         }
     </style>
 </head>
 <body>
-    <h1>Aktueller Stand - Tischtennis Turnier</h1>
+    <h1>Tischtennis Turnier - Aktueller Stand</h1>
 
-    <h3>Teamübersicht:</h3>
-    <table id="teamsTable">
-        <thead>
-            <tr>
-                <th>Team</th>
-                <th>Mitglied 1</th>
-                <th>Mitglied 2</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Team-Mitglieder werden hier eingefügt -->
-        </tbody>
-    </table>
+    <h3>Teams:</h3>
+    <ul id="teamList"></ul>
 
-    <h3>Spielplan und Ergebnisse:</h3>
+    <h3>Spielplan:</h3>
     <table id="scheduleTable">
         <thead>
             <tr>
@@ -52,29 +41,24 @@
                 <th>Ergebnis</th>
             </tr>
         </thead>
-        <tbody>
-            <!-- Der Spielplan und Ergebnisse werden hier angezeigt -->
-        </tbody>
+        <tbody></tbody>
     </table>
 
-    <h3>Aktuelle Tabelle:</h3>
-    <table id="standingsTable">
+    <h3>Aktuelle Rangliste:</h3>
+    <table id="rankingTable">
         <thead>
             <tr>
                 <th>Platz</th>
-                <th>Team</th>
-                <th>Punkte</th>
-                <th>+/-</th>
+                <th>Teamname</th>
+                <th>Gesamtpunkte</th>
             </tr>
         </thead>
-        <tbody>
-            <!-- Die aktuelle Rangliste wird hier eingefügt -->
-        </tbody>
+        <tbody></tbody>
     </table>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAksVQRYriHb9gS7TjgeN3faX10IoKJBIw",
@@ -88,58 +72,97 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const teamsRef = ref(db, 'teams');
-        const scheduleRef = ref(db, 'spielplan');
 
-        // Teams rendern
-        onValue(teamsRef, snapshot => {
-            const teams = snapshot.val();
-            if (teams) {
-                renderTeams(teams);
-            }
-        });
+        const teamList = document.getElementById('teamList');
+        const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
+        const rankingTable = document.getElementById('rankingTable').querySelector('tbody');
 
-        function renderTeams(teams) {
-            const teamsTable = document.getElementById('teamsTable').querySelector('tbody');
-            teamsTable.innerHTML = '';
+        // Funktion zum Laden der Teams und des Spielplans
+        function loadTeamsAndSchedule() {
+            // Teams aus Firebase laden
+            get(ref(db, 'teams')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const teams = snapshot.val();
+                    teams.forEach(team => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${team.teamName} - ${team.player1} und ${team.player2}`;
+                        teamList.appendChild(listItem);
+                    });
+                } else {
+                    console.log('Keine Teams gefunden.');
+                }
+            });
 
-            Object.keys(teams).forEach(teamKey => {
-                const team = teams[teamKey];
-                const row = `
-                    <tr>
-                        <td>${team.name}</td>
-                        <td>${team.player1}</td>
-                        <td>${team.player2}</td>
-                    </tr>
-                `;
-                teamsTable.innerHTML += row;
+            // Spielplan aus Firebase laden
+            get(ref(db, 'spielplan')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const spielplan = snapshot.val();
+                    spielplan.forEach(match => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${match.match}</td>
+                            <td>${match.team1}</td>
+                            <td>${match.team2}</td>
+                            <td>${match.result[0] ? match.result.join(" | ") : "Noch nicht gespielt"}</td>
+                        `;
+                        scheduleTable.appendChild(row);
+                    });
+                } else {
+                    console.log('Kein Spielplan gefunden.');
+                }
+            });
+
+            // Rangliste basierend auf den Ergebnissen generieren
+            get(ref(db, 'spielplan')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const spielplan = snapshot.val();
+                    const teamScores = {};
+
+                    spielplan.forEach(match => {
+                        const [team1, team2] = [match.team1, match.team2];
+                        const [result1, result2, result3] = match.result;
+                        const pointsTeam1 = calculatePoints(result1, result2, result3);
+                        const pointsTeam2 = calculatePoints(result2, result3, result1);
+
+                        teamScores[team1] = (teamScores[team1] || 0) + pointsTeam1;
+                        teamScores[team2] = (teamScores[team2] || 0) + pointsTeam2;
+                    });
+
+                    // Rangliste sortieren und anzeigen
+                    const sortedTeams = Object.entries(teamScores)
+                        .map(([team, points]) => ({ team, points }))
+                        .sort((a, b) => b.points - a.points);
+
+                    sortedTeams.forEach((team, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>${team.team}</td>
+                            <td>${team.points}</td>
+                        `;
+                        rankingTable.appendChild(row);
+                    });
+                } else {
+                    console.log('Keine Spielplan-Daten für Rangliste gefunden.');
+                }
             });
         }
 
-        // Spielplan rendern
-        onValue(scheduleRef, snapshot => {
-            const schedule = snapshot.val();
-            if (schedule) {
-                renderSchedule(schedule);
-            }
-        });
-
-        function renderSchedule(schedule) {
-            const scheduleTable = document.getElementById('scheduleTable').querySelector('tbody');
-            scheduleTable.innerHTML = '';
-
-            Object.values(schedule).forEach(match => {
-                const winner = match.finalResult.includes('gewinnt') ? 'winner' : '';
-                const row = `
-                    <tr class="${winner}">
-                        <td>${match.team1} vs ${match.team2}</td>
-                        <td>${match.results.join(', ') || 'Noch kein Ergebnis'}</td>
-                        <td>${match.finalResult || 'Noch kein Ergebnis'}</td>
-                    </tr>
-                `;
-                scheduleTable.innerHTML += row;
+        // Funktion zur Berechnung der Punkte für ein Team basierend auf den Satz-Ergebnissen
+        function calculatePoints(result1, result2, result3) {
+            let points = 0;
+            [result1, result2, result3].forEach(result => {
+                if (result) {
+                    const [score1, score2] = result.split('-').map(Number);
+                    if (score1 > score2) points += 2; // Team gewinnt den Satz
+                    else if (score1 === score2) points += 1; // Unentschieden im Satz
+                }
             });
+            return points;
         }
+
+        // Beim Laden der Seite die Daten aus Firebase laden
+        window.onload = loadTeamsAndSchedule;
     </script>
 </body>
 </html>
