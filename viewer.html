@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -147,11 +147,11 @@
                             teamStats[team1].losses += 2; // 0 Punkte für die Niederlage
                         }
 
-                        // Punkte zählen
-                        teamStats[team1].scored += score1;
-                        teamStats[team2].scored += score2;
-                        teamStats[team1].conceded += score2;
-                        teamStats[team2].conceded += score1;
+                        // Punkte zählen (aber nur, wenn die Ergebnisse vorhanden sind)
+                        teamStats[team1].scored += score1 || 0;
+                        teamStats[team2].scored += score2 || 0;
+                        teamStats[team1].conceded += score2 || 0;
+                        teamStats[team2].conceded += score1 || 0;
                     });
 
                     // Rangliste sortieren und anzeigen
