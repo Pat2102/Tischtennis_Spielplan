@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tischtennis Turnier - Aktueller Stand</title>
+    <title>v1.0 Tischtennis Turnier - Aktueller Stand</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,7 +38,7 @@
                 <th>Spiel</th>
                 <th>Team 1</th>
                 <th>Team 2</th>
-                <th>Ergebnis</th>
+                <th>Spiele</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -50,9 +50,8 @@
             <tr>
                 <th>Platz</th>
                 <th>Teamname</th>
-                <th>Erzielte Punkte</th>
-                <th>Bekommene Punkte</th>
-                <th>Differenz</th>
+                <th>Spiele</th>
+                <th>+/-</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -105,7 +104,7 @@
                             <td>${match.match}</td>
                             <td>${match.team1}</td>
                             <td>${match.team2}</td>
-                            <td>${match.result[0] ? match.result.join(" | ") : "Noch nicht gespielt"}</td>
+                            <td>${match.result[0] ? formatPoints(match.result) : "Noch nicht gespielt"}</td>
                         `;
                         scheduleTable.appendChild(row);
                     });
@@ -125,7 +124,7 @@
                         const [result1, result2, result3] = match.result;
 
                         // Berechnung der erzielten und erhaltenen Punkte
-                        const { team1Points, team2Points, team1Scored, team2Scored } = calculatePoints(result1, result2, result3);
+                        const { team1Scored, team2Scored, team1Points, team2Points } = calculatePoints(result1, result2, result3);
 
                         // Punkte für jedes Team speichern
                         if (!teamScores[team1]) {
@@ -154,8 +153,7 @@
                         row.innerHTML = `
                             <td>${index + 1}</td>
                             <td>${team.team}</td>
-                            <td>${team.scored}</td>
-                            <td>${team.received}</td>
+                            <td>${team.scored}:${team.received}</td>
                             <td>${team.diff}</td>
                         `;
                         rankingTable.appendChild(row);
@@ -186,6 +184,13 @@
                 team1Scored,
                 team2Scored
             };
+        }
+
+        // Formatierung der Spiele-Ergebnisse für die "Spiele"-Spalte
+        function formatPoints(results) {
+            const team1Points = results.map(result => result.split('-')[0]).reduce((sum, current) => sum + Number(current), 0);
+            const team2Points = results.map(result => result.split('-')[1]).reduce((sum, current) => sum + Number(current), 0);
+            return `${team1Points}:${team2Points}`;
         }
 
         // Beim Laden der Seite die Daten aus Firebase laden
